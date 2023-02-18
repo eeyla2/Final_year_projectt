@@ -6,6 +6,7 @@ import 'package:legsfree/firebase_options.dart';
 import 'package:legsfree/views/Login_view.dart';
 import 'package:legsfree/views/Register_view.dart';
 import 'package:legsfree/views/Verify_email_view.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 //import 'dart:developer' as devtools show log;
 
 void main() {
@@ -68,6 +69,78 @@ class HomePage extends StatelessWidget {
 
 enum MenuAction { logout }
 
+//location class with properties
+class Location {
+  final int id;
+  final String name;
+  final LatLng coordinates; //latitude and longitude variable
+
+//constructor
+  Location({required this.id, required this.name, required this.coordinates});
+}
+
+//create a weighted graph that can calculate the shortest path using djikstra's algorithm
+class WeightedDirectedGraph {
+  //a Map with the key being an int and the variable a Map with has an int map and an int variable
+  Map<int, Map<int, int>> graph = {};
+
+//fucntion that adds vertex if the vertex does not already exist
+  void addVertex(int vertex) {
+    if (!graph.containsKey(vertex)) {
+      graph[vertex] = {};
+    }
+  }
+
+//function that adds edge by assigning a start, end and a weight for that edge
+  void addEdge(int start, int end, int weight) {
+    if (!graph.containsKey(start)) {
+      addVertex(start);
+    }
+    if (!graph.containsKey(end)) {
+      addVertex(end);
+    }
+    graph[start]![end] =
+        weight; //might want to say ?. instead of ! not sure yet
+  }
+
+//list that calculates shortest path using djikstra's algorithm
+  List<int> shortestPath(int start, int end) {
+    var distances = {start: 0};
+    var visited = {};
+    var previous = {};
+    var queue = [start];
+
+    while (queue.isNotEmpty) {
+      var current = queue.removeAt(0);
+      visited[current] = true;
+
+      for (var neighbor in graph[current]!.keys) {
+        var distance = graph[current]![neighbor];
+        var totalDistance = (distances[current] ?? 0) + distance!;
+
+        if (!distances.containsKey(neighbor) ||
+            totalDistance < distances[neighbor]!) {
+          distances[neighbor] = totalDistance;
+          previous[neighbor] = current;
+        }
+
+        if (!visited.containsKey(neighbor)) {
+          queue.add(neighbor);
+        }
+      }
+    }
+
+    var path = [end];
+    var current = end;
+    while (current != start) {
+      current = previous[current]!;
+      path.insert(0, current);
+    }
+
+    return path;
+  }
+}
+
 //mainview widget
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -77,6 +150,58 @@ class MainView extends StatefulWidget {
 }
 
 class _MainViewState extends State<MainView> {
+  late GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  final Map<PolylineId, Polyline> _polylines = {};
+  final List<LatLng> _path = [];
+
+// ignore: prefer_final_fields
+  CameraPosition _initialCameraPosition = const CameraPosition(
+    target: LatLng(37.7749, -122.4194),
+    zoom: 12,
+  );
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+  }
+
+  void _addMarker(LatLng location, String markerId) {
+    final marker = Marker(
+      markerId: MarkerId(markerId),
+      position: location,
+    );
+    setState(() {
+      _markers.add(marker);
+    });
+  }
+
+  void _addPolyline(LatLng start, LatLng end, String polylineId) {
+    final id = PolylineId(polylineId);
+    final polyline = Polyline(
+      polylineId: id,
+      points: [_path.isEmpty ? start : _path.last, end],
+      color: Colors.blue,
+      width: 5,
+    );
+    _path.add(end);
+    setState(() {
+      _polylines[id] = polyline;
+    });
+  }
+
+  void _clearMarkers() {
+    setState(() {
+      _markers.clear();
+    });
+  }
+
+  void _clearPolylines() {
+    setState(() {
+      _polylines.clear();
+      _path.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,7 +233,31 @@ class _MainViewState extends State<MainView> {
           )
         ],
       ),
-      body: const Text('Hello World'),
+      body: GoogleMap(
+        onMapCreated: _onMapCreated,
+        initialCameraPosition: _initialCameraPosition,
+        markers: _markers,
+        polylines: Set<Polyline>.of(_polylines.values),
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: const Text("2"),
+            onPressed: _clearMarkers,
+            tooltip: 'Clear markers',
+            child: const Icon(Icons.clear),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: const Text("1"),
+            onPressed: _clearPolylines,
+            tooltip: 'Clear polylines',
+            child: const Icon(Icons.delete),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -144,3 +293,103 @@ Future<bool> showLogOutDialog(BuildContext context) {
   ).then(
       (value) => value ?? false); //incase you want to cancel the whole process
 }
+
+/*
+class RoutingApp extends StatefulWidget {
+  const RoutingApp({super.key});
+  @override
+  State<RoutingApp> createState() => _RoutingAppState();
+}
+
+class _RoutingAppState extends State<RoutingApp> {
+  late GoogleMapController? _mapController;
+  final Set<Marker> _markers = {};
+  final Map<PolylineId, Polyline> _polylines = {};
+  final List<LatLng> _path = [];
+
+  // ignore: prefer_final_fields
+  static CameraPosition _initialCameraPosition = const CameraPosition(
+    target: LatLng(37.7749, -122.4194),
+    zoom: 12,
+  );
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+  }
+
+  void _addMarker(LatLng location, String markerId) {
+    final marker = Marker(
+      markerId: MarkerId(markerId),
+      position: location,
+    );
+    setState(
+      () {
+        _markers.add(marker);
+      },
+    );
+  }
+
+  void _addPolyline(LatLng start, LatLng end, String polylineId) {
+    final id = PolylineId(polylineId);
+    final polyline = Polyline(
+      polylineId: id,
+      points: [_path.isEmpty ? start : _path.last, end],
+      color: Colors.blue,
+      width: 5,
+    );
+    _path.add(end);
+    setState(
+      () {
+        _polylines[id] = polyline;
+      },
+    );
+  }
+
+  void _clearMarkers() {
+    setState(() {
+      _markers.clear();
+    });
+  }
+
+  void _clearPolylines() {
+    setState(
+      () {
+        _polylines.clear();
+        _path.clear();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Routing App'),
+      ),
+      body: GoogleMap(
+        onMapCreated: _onMapCreated,
+        initialCameraPosition: _initialCameraPosition,
+        markers: _markers,
+        polylines: Set<Polyline>.of(_polylines.values),
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            onPressed: _clearMarkers,
+            tooltip: 'Clear markers',
+            child: const Icon(Icons.clear),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            onPressed: _clearPolylines,
+            tooltip: 'Clear polylines',
+            child: const Icon(Icons.delete),
+          ),
+        ],
+      ),
+    );
+  }
+}
+*/
