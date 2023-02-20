@@ -1,12 +1,16 @@
+//import 'package:material_floating_search_bar/material_floating_search_bar.dart';
+//import 'package:graphs/graphs.dart';
+//import 'package:directed_graph/directed_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:legsfree/firebase_options.dart';
 import 'package:legsfree/views/Login_view.dart';
 import 'package:legsfree/views/Register_view.dart';
 import 'package:legsfree/views/Verify_email_view.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:directed_graph/directed_graph.dart';
+//import 'package:floating_search_bar/floating_search_bar.dart';
+
 //import 'dart:developer' as devtools show log;
 
 void main() {
@@ -69,78 +73,6 @@ class HomePage extends StatelessWidget {
 
 enum MenuAction { logout }
 
-//location class with properties
-class Location {
-  final int id;
-  final String name;
-  final LatLng coordinates; //latitude and longitude variable
-
-//constructor
-  Location({required this.id, required this.name, required this.coordinates});
-}
-
-//create a weighted graph that can calculate the shortest path using djikstra's algorithm
-class WeightedDirectedGraph {
-  //a Map with the key being an int and the variable a Map with has an int map and an int variable
-  Map<int, Map<int, int>> graph = {};
-
-//fucntion that adds vertex if the vertex does not already exist
-  void addVertex(int vertex) {
-    if (!graph.containsKey(vertex)) {
-      graph[vertex] = {};
-    }
-  }
-
-//function that adds edge by assigning a start, end and a weight for that edge
-  void addEdge(int start, int end, int weight) {
-    if (!graph.containsKey(start)) {
-      addVertex(start);
-    }
-    if (!graph.containsKey(end)) {
-      addVertex(end);
-    }
-    graph[start]![end] =
-        weight; //might want to say ?. instead of ! not sure yet
-  }
-
-//list that calculates shortest path using djikstra's algorithm
-  List<int> shortestPath(int start, int end) {
-    var distances = {start: 0};
-    var visited = {};
-    var previous = {};
-    var queue = [start];
-
-    while (queue.isNotEmpty) {
-      var current = queue.removeAt(0);
-      visited[current] = true;
-
-      for (var neighbor in graph[current]!.keys) {
-        var distance = graph[current]![neighbor];
-        var totalDistance = (distances[current] ?? 0) + distance!;
-
-        if (!distances.containsKey(neighbor) ||
-            totalDistance < distances[neighbor]!) {
-          distances[neighbor] = totalDistance;
-          previous[neighbor] = current;
-        }
-
-        if (!visited.containsKey(neighbor)) {
-          queue.add(neighbor);
-        }
-      }
-    }
-
-    var path = [end];
-    var current = end;
-    while (current != start) {
-      current = previous[current]!;
-      path.insert(0, current);
-    }
-
-    return path;
-  }
-}
-
 //mainview widget
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -150,63 +82,65 @@ class MainView extends StatefulWidget {
 }
 
 class _MainViewState extends State<MainView> {
-  late GoogleMapController? _mapController;
-  final Set<Marker> _markers = {};
-  final Map<PolylineId, Polyline> _polylines = {};
-  final List<LatLng> _path = [];
+//initialize variables
+  final a = 'a';
+  final b = 'b';
+  final c = 'c';
+  final d = 'd';
+  final e = 'e';
+  final f = 'f';
+  final g = 'g';
+  final h = 'h';
+  final i = 'i';
+  final k = 'k';
+  final l = 'l';
 
-// ignore: prefer_final_fields
-  CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(37.7749, -122.4194),
-    zoom: 12,
+//initialize comparator variable
+  int comparator(
+    String s1,
+    String s2,
+  ) {
+    return s1.compareTo(s2);
+  }
+
+//initialize sum variable
+  int sum(int left, int right) => left + right;
+
+  var graph = WeightedDirectedGraph<String, int>(
+    {},
+    summation: (int a, int b) => a + b,
+    zero: 0,
+    comparator: (String a, String b) => a.compareTo(b),
   );
+//override built-in function initState
+  @override
+  void initState() {
+    super.initState();
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-  }
-
-  void _addMarker(LatLng location, String markerId) {
-    final marker = Marker(
-      markerId: MarkerId(markerId),
-      position: location,
+    graph = WeightedDirectedGraph<String, int>(
+      {
+        a: {b: 1, h: 7, c: 2, e: 40, g: 7},
+        b: {h: 6},
+        c: {h: 5, g: 4},
+        d: {e: 1, f: 2},
+        e: {g: 2},
+        f: {i: 3},
+        i: {l: 3, k: 2},
+        k: {g: 4, f: 5},
+        l: {l: 0}
+      },
+      summation: sum,
+      zero: 0,
+      comparator: comparator,
     );
-    setState(() {
-      _markers.add(marker);
-    });
-  }
-
-  void _addPolyline(LatLng start, LatLng end, String polylineId) {
-    final id = PolylineId(polylineId);
-    final polyline = Polyline(
-      polylineId: id,
-      points: [_path.isEmpty ? start : _path.last, end],
-      color: Colors.blue,
-      width: 5,
-    );
-    _path.add(end);
-    setState(() {
-      _polylines[id] = polyline;
-    });
-  }
-
-  void _clearMarkers() {
-    setState(() {
-      _markers.clear();
-    });
-  }
-
-  void _clearPolylines() {
-    setState(() {
-      _polylines.clear();
-      _path.clear();
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Main app'),
+        title: const Text(
+            'Main Page'), // have to change it so that it is at the bottom and has gadgets
         actions: [
           PopupMenuButton<MenuAction>(
             onSelected: (value) async {
@@ -233,28 +167,15 @@ class _MainViewState extends State<MainView> {
           )
         ],
       ),
-      body: GoogleMap(
-        onMapCreated: _onMapCreated,
-        initialCameraPosition: _initialCameraPosition,
-        markers: _markers,
-        polylines: Set<Polyline>.of(_polylines.values),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      body: Column(
         children: [
-          FloatingActionButton(
-            heroTag: const Text("2"),
-            onPressed: _clearMarkers,
-            tooltip: 'Clear markers',
-            child: const Icon(Icons.clear),
+          const Text(
+            'Shortest path from a to g:',
+            style: TextStyle(fontSize: 20),
           ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: const Text("1"),
-            onPressed: _clearPolylines,
-            tooltip: 'Clear polylines',
-            child: const Icon(Icons.delete),
+          Text(
+            '${graph.shortestPath('a', 'g')}',
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -294,102 +215,11 @@ Future<bool> showLogOutDialog(BuildContext context) {
       (value) => value ?? false); //incase you want to cancel the whole process
 }
 
-/*
-class RoutingApp extends StatefulWidget {
-  const RoutingApp({super.key});
-  @override
-  State<RoutingApp> createState() => _RoutingAppState();
-}
-
-class _RoutingAppState extends State<RoutingApp> {
-  late GoogleMapController? _mapController;
-  final Set<Marker> _markers = {};
-  final Map<PolylineId, Polyline> _polylines = {};
-  final List<LatLng> _path = [];
-
-  // ignore: prefer_final_fields
-  static CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(37.7749, -122.4194),
-    zoom: 12,
-  );
-
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-  }
-
-  void _addMarker(LatLng location, String markerId) {
-    final marker = Marker(
-      markerId: MarkerId(markerId),
-      position: location,
-    );
-    setState(
-      () {
-        _markers.add(marker);
-      },
-    );
-  }
-
-  void _addPolyline(LatLng start, LatLng end, String polylineId) {
-    final id = PolylineId(polylineId);
-    final polyline = Polyline(
-      polylineId: id,
-      points: [_path.isEmpty ? start : _path.last, end],
-      color: Colors.blue,
-      width: 5,
-    );
-    _path.add(end);
-    setState(
-      () {
-        _polylines[id] = polyline;
-      },
-    );
-  }
-
-  void _clearMarkers() {
-    setState(() {
-      _markers.clear();
-    });
-  }
-
-  void _clearPolylines() {
-    setState(
-      () {
-        _polylines.clear();
-        _path.clear();
-      },
-    );
-  }
+class MyWidget extends StatelessWidget {
+  const MyWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Routing App'),
-      ),
-      body: GoogleMap(
-        onMapCreated: _onMapCreated,
-        initialCameraPosition: _initialCameraPosition,
-        markers: _markers,
-        polylines: Set<Polyline>.of(_polylines.values),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            onPressed: _clearMarkers,
-            tooltip: 'Clear markers',
-            child: const Icon(Icons.clear),
-          ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            onPressed: _clearPolylines,
-            tooltip: 'Clear polylines',
-            child: const Icon(Icons.delete),
-          ),
-        ],
-      ),
-    );
+    return const Placeholder();
   }
 }
-*/
