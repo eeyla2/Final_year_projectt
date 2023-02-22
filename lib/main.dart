@@ -9,6 +9,9 @@ import 'package:legsfree/views/Login_view.dart';
 import 'package:legsfree/views/Register_view.dart';
 import 'package:legsfree/views/Verify_email_view.dart';
 import 'package:directed_graph/directed_graph.dart';
+
+import 'constants/routes.dart';
+//import 'ovals_painter.dart';
 //import 'package:floating_search_bar/floating_search_bar.dart';
 
 //import 'dart:developer' as devtools show log;
@@ -25,9 +28,9 @@ void main() {
         home: const HomePage(),
         routes: {
           //mapping different routes
-          '/login/': (context) => const LoginView(),
-          '/register/': (context) => const RegisterView(),
-          '/main/': (context) => const MainView(),
+          loginRoute: (context) => const LoginView(),
+          registerRoute: (context) => const RegisterView(),
+          mainRoute: (context) => const MainView(),
         }),
   );
 }
@@ -94,6 +97,7 @@ class _MainViewState extends State<MainView> {
   final i = 'i';
   final k = 'k';
   final l = 'l';
+  List<String> shortestPath = [];
 
 //initialize comparator variable
   int comparator(
@@ -112,6 +116,7 @@ class _MainViewState extends State<MainView> {
     zero: 0,
     comparator: (String a, String b) => a.compareTo(b),
   );
+
 //override built-in function initState
   @override
   void initState() {
@@ -133,6 +138,8 @@ class _MainViewState extends State<MainView> {
       zero: 0,
       comparator: comparator,
     );
+
+    shortestPath = graph.shortestPath(d, l);
   }
 
   @override
@@ -150,7 +157,7 @@ class _MainViewState extends State<MainView> {
                   if (shouldLogout) {
                     FirebaseAuth.instance.signOut();
                     Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/login/',
+                      loginRoute,
                       (_) => false,
                     );
                   }
@@ -169,13 +176,15 @@ class _MainViewState extends State<MainView> {
       ),
       body: Column(
         children: [
-          const Text(
-            'Shortest path from a to g:',
-            style: TextStyle(fontSize: 20),
+          Image.asset(
+            'images/map.png',
           ),
-          Text(
-            '${graph.shortestPath('a', 'g')}',
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+          SizedBox(
+            width: 400,
+            height: 400,
+            child: CustomPaint(
+              painter: LocationCircles(),
+            ),
           ),
         ],
       ),
@@ -215,11 +224,15 @@ Future<bool> showLogOutDialog(BuildContext context) {
       (value) => value ?? false); //incase you want to cancel the whole process
 }
 
-class MyWidget extends StatelessWidget {
-  const MyWidget({super.key});
+class LocationCircles extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    var paint1 = Paint()
+      ..color = const Color(0xff885599)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(200, 100), 5, paint1);
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return const Placeholder();
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
