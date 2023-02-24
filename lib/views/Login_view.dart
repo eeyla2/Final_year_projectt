@@ -1,9 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'dart:developer' as devtools show log;
-
-import '../constants/routes.dart';
 //import 'package:legfree/firebase_options.dart';
 
 class LoginView extends StatefulWidget {
@@ -83,11 +80,9 @@ class _LoginViewState extends State<LoginView> {
                   email: email,
                   password: password,
                 );
-                devtools.log(
-                  userCredential.toString(),
-                ); //lioke print but does not produce warnings but only takes strings
+                print(userCredential);
                 Navigator.of(context).pushNamedAndRemoveUntil(
-                  mainRoute,
+                  '/main/',
                   (route) => false,
                 );
               } on FirebaseAuthException catch (e) {
@@ -95,12 +90,12 @@ class _LoginViewState extends State<LoginView> {
                 //general catch statement
                 if (e.code == 'user-not-found') {
                   //if exception is user is not found print user not foundi in terminal
-                  devtools.log('User not found');
+                  print('User not found');
                 } else if (e.code == 'wrong-password') {
                   //if exception is wrong password entered print wrong password in terminal
-                  devtools.log('Wrong password');
+                  print('Wrong password');
                 } else {
-                  devtools.log(e.code);
+                  print(e.code);
                 }
               }
             },
@@ -110,7 +105,7 @@ class _LoginViewState extends State<LoginView> {
             //routes to register page if button is pressed
             onPressed: () {
               Navigator.of(context).pushNamedAndRemoveUntil(
-                registerRoute,
+                '/register/',
                 (route) => false,
               );
             },
