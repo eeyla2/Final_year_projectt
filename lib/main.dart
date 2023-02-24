@@ -1,17 +1,19 @@
 //import 'package:material_floating_search_bar/material_floating_search_bar.dart';
-//import 'package:graphs/graphs.dart';
-//import 'package:directed_graph/directed_graph.dart';
+import 'dart:async';
+import 'dart:io';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:location/location.dart';
 import 'package:legsfree/firebase_options.dart';
 import 'package:legsfree/views/Login_view.dart';
 import 'package:legsfree/views/Register_view.dart';
 import 'package:legsfree/views/Verify_email_view.dart';
 import 'package:directed_graph/directed_graph.dart';
-
 import 'constants/routes.dart';
-//import 'ovals_painter.dart';
+import 'dart:developer' as devtools show log;
 //import 'package:floating_search_bar/floating_search_bar.dart';
 
 //import 'dart:developer' as devtools show log;
@@ -76,6 +78,26 @@ class HomePage extends StatelessWidget {
 
 enum MenuAction { logout }
 
+class NetworkConnectivity {
+  NetworkConnectivity();
+
+  void checkConnection() async {
+    try {
+      final result = await InternetAddress.lookup(
+        'example.com',
+      );
+
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        devtools.log(
+          'connected',
+        );
+      }
+    } on SocketException catch (_) {
+      devtools.log('not connected');
+    }
+  }
+}
+
 //mainview widget
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -122,6 +144,8 @@ class _MainViewState extends State<MainView> {
   void initState() {
     super.initState();
 
+    initLocationServices();
+    //have to have it's own class
     graph = WeightedDirectedGraph<String, int>(
       {
         a: {b: 1, h: 7, c: 2, e: 40, g: 7},
@@ -132,7 +156,7 @@ class _MainViewState extends State<MainView> {
         f: {i: 3},
         i: {l: 3, k: 2},
         k: {g: 4, f: 5},
-        l: {l: 0}
+        l: {l: 0},
       },
       summation: sum,
       zero: 0,
@@ -140,6 +164,9 @@ class _MainViewState extends State<MainView> {
     );
 
     shortestPath = graph.shortestPath(d, l);
+
+    NetworkConnectivity connectivity = NetworkConnectivity();
+    connectivity.checkConnection();
   }
 
   @override
@@ -176,15 +203,19 @@ class _MainViewState extends State<MainView> {
       ),
       body: Column(
         children: [
-          Image.asset(
-            'images/map.png',
-          ),
-          SizedBox(
-            width: 400,
-            height: 400,
-            child: CustomPaint(
-              painter: LocationCircles(),
-            ),
+          Stack(
+            children: <Widget>[
+              Image.asset(
+                'images/map.png',
+              ),
+              SizedBox(
+                width: 400,
+                height: 400,
+                child: CustomPaint(
+                  painter: LocationCircles(),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -228,7 +259,7 @@ class LocationCircles extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     var paint1 = Paint()
-      ..color = const Color(0xff885599)
+      ..color = const Color.fromARGB(255, 107, 14, 14)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(const Offset(200, 100), 5, paint1);
   }
@@ -236,3 +267,182 @@ class LocationCircles extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+
+Future initLocationServices() async {
+//create location instance
+  var location = Location();
+
+//check if location services are enabled
+  if (!await location.serviceEnabled()) {
+    if (!await location.requestService()) {
+      return devtools.log('Service Not Enabled');
+    }
+  }
+
+//check that the permission for usage is given
+  var permission = await location.hasPermission();
+  if (permission == PermissionStatus.denied) {
+    permission = await location.requestPermission();
+    if (permission != PermissionStatus.granted) {
+      return devtools.log('Permission not granted');
+    }
+  }
+
+  location.enableBackgroundMode(enable: true);
+
+//might not need
+
+//output current lcoation to debug console
+  var loc = await location.getLocation();
+  devtools.log('${loc.latitude} ${loc.longitude}');
+
+//get changing location
+  location.onLocationChanged.listen(
+    (LocationData currentLocation) {
+      // Use current location
+      //_locationData = currentLocation;
+      devtools.log('${currentLocation.latitude} ${currentLocation.longitude}');
+    },
+  );
+}
+
+
+
+/*
+class NetworkConnectivity {
+  NetworkConnectivity._(); //constructor that is private to the class only
+
+  static final _instance = NetworkConnectivity._(); //empty contructor
+  static NetworkConnectivity get instance =>
+      _instance; //store instance instead of empty contructor
+
+  /// [Connectivity] is designed to work as a singleton.
+  // When a second instance is created, the first instance will not be able to listen to the
+  // EventChannel because it is overridden. Forcing the class to be a singleton class can prevent
+  // misuse of creating a second instance from a programmer.
+  final _networkConnectivity = Connectivity();
+  final _controller = StreamController.broadcast(); //controlls a stream
+  Stream get myStream =>
+      _controller.stream; //a stream instance out of the stream controller
+
+  //check internet status
+  void _checkStatus(ConnectivityResult result) async {
+    bool isOnline =
+        false; //set the variable up as false; this variable asks the question of whether there is internet connectivity
+
+    //check for error of non-working socket
+    try {
+      // try setting up internet connection
+
+      final result = await InternetAddress.lookup(
+          'example.com'); //it looks up an internet host and tries to connect to it to make sure the internet has really connected
+      isOnline = result.isNotEmpty &&
+          result[0]
+              .rawAddress
+              .isNotEmpty; //is supposed to store true inside the variable
+    } on SocketException catch (_) {
+      //handle the potential error
+
+      isOnline = false; //keep variable as false
+    }
+    _controller.sink.add({result: isOnline});
+  }
+
+  //initialization
+  void initialise() async {
+    ConnectivityResult result = await _networkConnectivity.checkConnectivity();
+    _checkStatus(result); //check result of the connnectivity
+
+    //when connectivity of result is changed the new connectivity is printed
+    ////and the check function is done again
+    _networkConnectivity.onConnectivityChanged.listen(
+      (result) {
+        devtools.log(result.toString());
+        _checkStatus(result);
+      },
+    );
+  }
+
+  void disposeStream() => _controller.close(); //closes Streamcontroller
+}
+
+class ConnectionCheckerDemo extends StatefulWidget {
+  const ConnectionCheckerDemo({Key? key}) : super(key: key);
+
+  @override
+  State<ConnectionCheckerDemo> createState() => _ConnectionCheckerDemoState();
+}
+
+class _ConnectionCheckerDemoState extends State<ConnectionCheckerDemo> {
+// Variables hold the connectivity type and its status
+  Map _source = {ConnectivityResult.none: false};
+  final NetworkConnectivity _networkConnectivity = NetworkConnectivity.instance;
+  String string = '';
+
+//override init state of this statefeul
+  @override
+  void initState() {
+    super.initState();
+
+    _networkConnectivity.initialise(); //initialize connection
+    _networkConnectivity.myStream.listen(
+      (source) {
+        _source = source; //store connection status
+        devtools.log('source $_source');
+
+        //going through the different formas of connections
+        switch (_source.keys.toList()[0]) {
+          case ConnectivityResult
+              .mobile: //if the connection is connected to a cellular network
+            string = _source.values.toList()[0]
+                ? 'Mobile: Online'
+                : 'Mobile: Offline'; //check if it's online of offline
+            break;
+
+          case ConnectivityResult
+              .wifi: //if the connection is connected to a Wifi
+            string = _source.values.toList()[0]
+                ? 'WiFi: Online'
+                : 'WiFi: Offline'; //check if it's online of offline
+            break;
+
+          case ConnectivityResult.none: //if it's not connected to anything
+          default:
+            string = 'Offline';
+        }
+
+        //refreshes pagew to set the connection status text
+        setState(
+          () {},
+        );
+
+        //snackbar with the latest connection
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              string,
+              style: const TextStyle(fontSize: 30),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        backgroundColor: const Color(0xff6ae792),
+      ),
+      body: Center(
+        child: Text(
+          string,
+          style: const TextStyle(fontSize: 54),
+        ),
+      ),
+    );
+  }
+}
+*/
