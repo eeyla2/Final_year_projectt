@@ -7,6 +7,7 @@ import 'package:legsfree/views/Login_view.dart';
 import 'package:legsfree/views/Register_view.dart';
 import 'package:legsfree/views/Verify_email_view.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'src/locations.dart' as locations;
 //import 'dart:developer' as devtools show log;
 
 void main() {
@@ -150,56 +151,27 @@ class MainView extends StatefulWidget {
 }
 
 class _MainViewState extends State<MainView> {
-  late GoogleMapController? _mapController;
-  final Set<Marker> _markers = {};
-  final Map<PolylineId, Polyline> _polylines = {};
-  final List<LatLng> _path = [];
+  final Map<String, Marker> _markers = {};
 
-// ignore: prefer_final_fields
-  CameraPosition _initialCameraPosition = const CameraPosition(
-    target: LatLng(37.7749, -122.4194),
-    zoom: 12,
-  );
+  Future<void> _onMapCreated(GoogleMapController controller) async {
+    final googleOffices = await locations.getGoogleOffices();
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-  }
-
-  void _addMarker(LatLng location, String markerId) {
-    final marker = Marker(
-      markerId: MarkerId(markerId),
-      position: location,
+    setState(
+      () {
+        _markers.clear();
+        for (final office in googleOffices.offices) {
+          final marker = Marker(
+            markerId: MarkerId(office.name),
+            position: LatLng(office.lat, office.lng),
+            infoWindow: InfoWindow(
+              title: office.name,
+              snippet: office.address,
+            ),
+          );
+          _markers[office.name] = marker;
+        }
+      },
     );
-    setState(() {
-      _markers.add(marker);
-    });
-  }
-
-  void _addPolyline(LatLng start, LatLng end, String polylineId) {
-    final id = PolylineId(polylineId);
-    final polyline = Polyline(
-      polylineId: id,
-      points: [_path.isEmpty ? start : _path.last, end],
-      color: Colors.blue,
-      width: 5,
-    );
-    _path.add(end);
-    setState(() {
-      _polylines[id] = polyline;
-    });
-  }
-
-  void _clearMarkers() {
-    setState(() {
-      _markers.clear();
-    });
-  }
-
-  void _clearPolylines() {
-    setState(() {
-      _polylines.clear();
-      _path.clear();
-    });
   }
 
   @override
@@ -235,28 +207,11 @@ class _MainViewState extends State<MainView> {
       ),
       body: GoogleMap(
         onMapCreated: _onMapCreated,
-        initialCameraPosition: _initialCameraPosition,
-        markers: _markers,
-        polylines: Set<Polyline>.of(_polylines.values),
-      ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            heroTag: const Text("2"),
-            onPressed: _clearMarkers,
-            tooltip: 'Clear markers',
-            child: const Icon(Icons.clear),
-          ),
-          const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: const Text("1"),
-            onPressed: _clearPolylines,
-            tooltip: 'Clear polylines',
-            child: const Icon(Icons.delete),
-          ),
-        ],
+        initialCameraPosition: const CameraPosition(
+          target: LatLng(0, 0),
+          zoom: 2,
+        ),
+        markers: _markers.values.toSet(),
       ),
     );
   }
