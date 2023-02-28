@@ -1,11 +1,13 @@
 //import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/services.dart';
 import 'package:location/location.dart';
 import 'package:legsfree/firebase_options.dart';
 import 'package:legsfree/views/Login_view.dart';
@@ -78,6 +80,7 @@ class HomePage extends StatelessWidget {
 
 enum MenuAction { logout }
 
+/*
 class NetworkConnectivity {
   NetworkConnectivity();
 
@@ -97,7 +100,7 @@ class NetworkConnectivity {
     }
   }
 }
-
+*/
 //mainview widget
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -107,6 +110,11 @@ class MainView extends StatefulWidget {
 }
 
 class _MainViewState extends State<MainView> {
+//connectivity variables
+  ConnectivityResult connectionStatus = ConnectivityResult.none;
+  final Connectivity connectivity = Connectivity();
+  late StreamSubscription<ConnectivityResult> connectivitySubscription;
+
 //initialize variables
   final a = 'a';
   final b = 'b';
@@ -163,15 +171,55 @@ class _MainViewState extends State<MainView> {
       comparator: comparator,
     );
 
+//calculate shortest path
     shortestPath = graph.shortestPath(d, l);
 
-    NetworkConnectivity connectivity = NetworkConnectivity();
-    connectivity.checkConnection();
+//connectivity
+    connectivitySubscription =
+        connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+    devtools.log(
+      'Connection Status: ${connectionStatus.toString()}',
+    );
+  }
+
+  @override
+  void dispose() {
+    connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> initConnectivity() async {
+    late ConnectivityResult result;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      result = await connectivity.checkConnectivity();
+    } on PlatformException catch (e) {
+      devtools.log('Couldn\'t check connectivity status', error: e);
+      return;
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) {
+      return Future.value(null);
+    }
+
+    return _updateConnectionStatus(result);
+  }
+
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
+    setState(() {
+      connectionStatus = result;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset:
+          false, //helps change the gadegst to fit in case other widgets appear
       appBar: AppBar(
         title: const Text(
             'Main Page'), // have to change it so that it is at the bottom and has gadgets
@@ -201,23 +249,31 @@ class _MainViewState extends State<MainView> {
           )
         ],
       ),
-      body: Column(
-        children: [
-          Stack(
-            children: <Widget>[
-              Image.asset(
-                'images/map.png',
-              ),
-              SizedBox(
-                width: 400,
-                height: 400,
-                child: CustomPaint(
-                  painter: LocationCircles(),
+      body: SingleChildScrollView(
+        //scroll widget
+        child: Column(
+          children: [
+            Stack(
+              //stack widgets on top of each other
+              children: <Widget>[
+                Image.asset(
+                  //loads an image on to the app
+                  'images/map.png',
                 ),
-              ),
-            ],
-          ),
-        ],
+                SizedBox(
+                  //a box of dimensions 400x400 and an x-y scale of 200 starting from the top left and going downwards and right
+                  width: 400,
+                  height: 400,
+
+                  child: CustomPaint(
+                    //paint
+                    painter: LocationCircles(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -255,19 +311,32 @@ Future<bool> showLogOutDialog(BuildContext context) {
       (value) => value ?? false); //incase you want to cancel the whole process
 }
 
+//draws circles and lines
 class LocationCircles extends CustomPainter {
+  //override the paint function with the data and functions to paint
   @override
   void paint(Canvas canvas, Size size) {
+    const pointMode = ui.PointMode.polygon; // drawing as a polygon
+    const points = [
+      //the points the line will drawe in between
+      Offset(50, 100),
+      Offset(150, 75),
+      Offset(250, 250),
+      Offset(130, 200),
+      Offset(270, 100),
+    ];
     var paint1 = Paint()
       ..color = const Color.fromARGB(255, 107, 14, 14)
       ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(200, 100), 5, paint1);
+    canvas.drawCircle(const Offset(200, 100), 5, paint1); //draw circle
+    canvas.drawPoints(pointMode, points, paint1); // draw line between points
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
+//finding location
 Future initLocationServices() async {
 //create location instance
   var location = Location();
@@ -305,6 +374,8 @@ Future initLocationServices() async {
     },
   );
 }
+
+
 
 
 
