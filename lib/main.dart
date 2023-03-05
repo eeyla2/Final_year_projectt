@@ -14,6 +14,7 @@ import 'package:legsfree/views/Login_view.dart';
 import 'package:legsfree/views/Register_view.dart';
 import 'package:legsfree/views/Verify_email_view.dart';
 import 'package:directed_graph/directed_graph.dart';
+import 'package:path/path.dart';
 import 'constants/routes.dart';
 import 'dart:developer' as devtools show log;
 //import 'package:floating_search_bar/floating_search_bar.dart';
@@ -374,6 +375,7 @@ Future initLocationServices() async {
     },
   );
 }
+
 
 
 

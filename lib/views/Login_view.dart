@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:legsfree/main.dart';
+import 'package:legsfree/utilities/show_error_dialog.dart';
 import 'dart:developer' as devtools show log;
 
 import '../constants/routes.dart';
@@ -94,14 +96,21 @@ class _LoginViewState extends State<LoginView> {
                 //if the exception FirebaseAuthException appears check for type of Authexception
                 //general catch statement
                 if (e.code == 'user-not-found') {
-                  //if exception is user is not found print user not foundi in terminal
-                  devtools.log('User not found');
+                  //if exception is user is not found display user not found
+                  await showErrorDialog(context, 'User not Found');
                 } else if (e.code == 'wrong-password') {
                   //if exception is wrong password entered print wrong password in terminal
-                  devtools.log('Wrong password');
+                  await showErrorDialog(context, 'Wrong password');
                 } else {
-                  devtools.log(e.code);
+                  //if exception falls underFirebaseException but is not wrong password or user not found then display error
+                  await showErrorDialog(context, 'Error: ${e.code}');
                 }
+              } catch (e) {
+                //if exception does not fall under FireBaseException then display error
+                await showErrorDialog(
+                  context,
+                  e.toString(),
+                );
               }
             },
             child: const Text('Login'),
