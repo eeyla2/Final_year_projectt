@@ -1,6 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'dart:developer' as devtools show log;
+import 'package:legsfree/services/auth/auth_exceptions.dart';
+import 'package:legsfree/services/auth/auth_service.dart';
+import 'package:legsfree/utilities/show_error_dialog.dart';
+//import 'dart:developer' as devtools show log;
 
 import '../constants/routes.dart';
 
@@ -72,27 +74,26 @@ class _RegisterViewState extends State<RegisterView> {
                   .text; //assigns the value of the password as the text entered to it
               try {
                 //try to register the user
-                final userCredential =
-                    await FirebaseAuth.instance.createUserWithEmailAndPassword(
+                await AuthService.firebase().createUser(
                   email: email,
                   password: password,
                 );
-                devtools.log(userCredential.toString());
-              } on FirebaseAuthException catch (e) {
-                //if the exception FirebaseAuthException appears seremine type of Authexception
-                if (e.code == 'weak-password') {
-                  //if exception is weak-password print weak password in terminal
-                  devtools.log('Weak Password');
-                } else if (e.code == 'email-already-in-use') {
-                  //if exception is email-already-in-use print email is already in use in terminal
-                  devtools.log('Email is already in use');
-                } else if (e.code == 'invalid-email') {
-                  //if exception is invalid email print invalid email in terminal
-                  devtools.log('invalid email was entered');
-                } else {
-                  devtools.log(e.toString());
-                  devtools.log(e.code);
-                }
+                AuthService.firebase().sendEmailVerification();
+                Navigator.of(context)
+                    .pushNamed(verifyEmailRoute); //push and don't remove
+              } on WeakPasswordAuthException {
+                //if exception is weak-password print weak password in terminal
+                await showErrorDialog(context, 'Weak password');
+              } on EmailAlreadyInUseAuthException {
+                //if exception is email-already-in-use print email is already in use in terminal
+                await showErrorDialog(
+                    context, 'Email is already in use, try a different email');
+              } on InvalidEmailAuthException {
+//if exception is invalid email print invalid email in terminal
+                await showErrorDialog(
+                    context, 'invalid email entered, try a different email');
+              } on GenericAuthException {
+                await showErrorDialog(context, 'Failed to register');
               }
             },
             child: const Text('Register'),

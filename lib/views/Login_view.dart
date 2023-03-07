@@ -1,9 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:legsfree/main.dart';
+import 'package:legsfree/services/auth/auth_exceptions.dart';
+import 'package:legsfree/services/auth/auth_service.dart';
 import 'package:legsfree/utilities/show_error_dialog.dart';
-import 'dart:developer' as devtools show log;
+//import 'dart:developer' as devtools show log;
 
 import '../constants/routes.dart';
 //import 'package:legfree/firebase_options.dart';
@@ -80,37 +80,35 @@ class _LoginViewState extends State<LoginView> {
 
               try {
                 //try to sign in the user
-                final userCredential =
-                    await FirebaseAuth.instance.signInWithEmailAndPassword(
+
+                await AuthService.firebase().logIn(
                   email: email,
                   password: password,
                 );
-                devtools.log(
-                  userCredential.toString(),
-                ); //lioke print but does not produce warnings but only takes strings
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  mainRoute,
-                  (route) => false,
-                );
-              } on FirebaseAuthException catch (e) {
-                //if the exception FirebaseAuthException appears check for type of Authexception
-                //general catch statement
-                if (e.code == 'user-not-found') {
-                  //if exception is user is not found display user not found
-                  await showErrorDialog(context, 'User not Found');
-                } else if (e.code == 'wrong-password') {
-                  //if exception is wrong password entered print wrong password in terminal
-                  await showErrorDialog(context, 'Wrong password');
+
+                final user = AuthService.firebase().currentUser;
+                if (user?.isEmailVerified ?? false) {
+                  //user email verified
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    mainRoute,
+                    (route) => false,
+                  );
                 } else {
-                  //if exception falls underFirebaseException but is not wrong password or user not found then display error
-                  await showErrorDialog(context, 'Error: ${e.code}');
+                  //user email is not verified
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    verifyEmailRoute,
+                    (route) => false,
+                  );
                 }
-              } catch (e) {
-                //if exception does not fall under FireBaseException then display error
-                await showErrorDialog(
-                  context,
-                  e.toString(),
-                );
+              } on UserNotFoundAuthException {
+                //if exception is user is not found display user not found
+                await showErrorDialog(context, 'User not Found');
+              } on WeakPasswordAuthException {
+                //if exception is wrong password entered print wrong password in terminal
+                await showErrorDialog(context, 'Wrong password');
+              } on GenericAuthException {
+//if exception falls underFirebaseException but is not wrong password or user not found then display error
+                await showErrorDialog(context, 'Authentication Error');
               }
             },
             child: const Text('Login'),
