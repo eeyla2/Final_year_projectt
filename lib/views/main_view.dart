@@ -1,13 +1,16 @@
 //mainview widget
 
 import 'dart:async';
+import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:directed_graph/directed_graph.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 import 'dart:developer' as devtools show log;
+import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 import '../constants/routes.dart';
 import '../enums/menu_action.dart';
@@ -165,6 +168,7 @@ class _MainViewState extends State<MainView> {
         child: Column(
           children: [
             Stack(
+              //fit: StackFit.expand,
               //stack widgets on top of each other
               children: <Widget>[
                 Image.asset(
@@ -175,12 +179,12 @@ class _MainViewState extends State<MainView> {
                   //a box of dimensions 400x400 and an x-y scale of 200 starting from the top left and going downwards and right
                   width: 400,
                   height: 400,
-
                   child: CustomPaint(
                     //paint
                     painter: LocationCircles(),
                   ),
                 ),
+                //buildFloatingSearchBar(context),
               ],
             ),
           ],
@@ -188,4 +192,80 @@ class _MainViewState extends State<MainView> {
       ),
     );
   }
+}
+
+//Widget searchBarUI() {
+
+//  final isPortrait = MediaQuery.of(context).orientation = Orientation.portrait;
+
+//return FloatingSearchBar(
+//  hint: 'Searching.....',
+//openAxisAlignment: 0.0,
+//maxwidth: 600,
+// axisalignment: 0.0,
+// scrollPadding: const EdgeInsets.only(top: 16, bottom: 20),
+//elevation: 4.0,
+//onQueryChanged: (query) {},
+//showDrawerHamburger: false,
+//transitionCurve: Curves.easeInOut,
+//transitionDuration: const Duration(milliseconds: 500),
+//transition: CircularFloatingSearchBarTransition(),
+//debounceDelay: const Duration(milliseconds: 500),
+//actions: const [
+// FloatingSearchBarAction(
+//  showIfClosed: false,
+//child: CircularButton(icon: null, onPressed: null),
+//),
+//],
+//builder: (BuildContext context, Animation<double> transition) {  },);
+//}
+
+Widget buildFloatingSearchBar(BuildContext context) {
+  final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+
+  return FloatingSearchBar(
+    hint: 'Search...',
+    scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
+    transitionDuration: const Duration(milliseconds: 800),
+    transitionCurve: Curves.easeInOut,
+    physics: const BouncingScrollPhysics(),
+    axisAlignment: isPortrait ? 0.0 : -1.0,
+    openAxisAlignment: 0.0,
+    width: isPortrait ? 600 : 500,
+    //height: double.infinity,
+    debounceDelay: const Duration(milliseconds: 500),
+    onQueryChanged: (query) {
+      // Call your model, bloc, controller here.
+    },
+    // Specify a custom transition to be used for
+    // animating between opened and closed stated.
+    transition: CircularFloatingSearchBarTransition(),
+    actions: [
+      FloatingSearchBarAction(
+        showIfOpened: false,
+        child: CircularButton(
+          icon: const Icon(Icons.place),
+          onPressed: () {},
+        ),
+      ),
+      FloatingSearchBarAction.searchToClear(
+        showIfClosed: false,
+      ),
+    ],
+    builder: (context, transition) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Material(
+          color: Colors.white,
+          elevation: 4.0,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: Colors.accents.map((color) {
+              return Container(height: 112, color: color);
+            }).toList(),
+          ),
+        ),
+      );
+    },
+  );
 }
