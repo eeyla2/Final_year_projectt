@@ -138,44 +138,38 @@ class LocationCircles extends CustomPainter {
       //the points the line will drawe in between
       Offset(650, 180), //22
       Offset(645, 171), //Y101
-      Offset(637, 161), //Y102
-      Offset(633, 156), //Y103
+      Offset(633, 156), //Y102
       Offset(633, 165), //W101
       Offset(633, 170), //W102
-      Offset(633, 175), //W103
-      Offset(632, 180), //W104
-      Offset(630, 185), //W105
-      Offset(628, 187), //W106
-      Offset(626, 192), //W107
-      Offset(622, 195), //W108
-      Offset(618, 200), //W109
-      Offset(614, 202), //W110
-      Offset(614, 203), //W111
-      Offset(612, 206), //W112
-      Offset(610, 210), //W113
-      Offset(608, 214), //W114
-      Offset(607, 218), //W115
-      Offset(608, 222), //W116
-      Offset(610, 226), //W117
-      Offset(613, 232), //W118
-      Offset(616, 236), //W119
-      Offset(619, 240), //W120
-      Offset(620, 244), //W121
-      Offset(622, 248), //W122
-      Offset(624, 252), //W123
-      Offset(622, 256), //W124
-      Offset(620, 260), //W125
-      Offset(623, 262), //W120
+      Offset(630, 185), //W103
+      Offset(628, 187), //W104
+      Offset(626, 192), //W105
+      Offset(618, 200), //W106
+      Offset(614, 202), //W107
+      Offset(614, 203), //W108
+      Offset(610, 210), //W109
+      Offset(608, 214), //W110
+      Offset(607, 218), //W111
+      Offset(610, 226), //W112
+      Offset(615, 232), //W113
+      Offset(620, 244), //W114
+      Offset(622, 248), //W115
+      Offset(624, 252), //W116
+      Offset(620, 260), //W117
+      Offset(623, 262), //W201
+      Offset(626, 263), //W202
+      Offset(632, 265), //W203
+      Offset(635, 266), //W301
       Offset(649, 254), //57
-      Offset(651, 269), //24
-      Offset(656, 280), //23
-      Offset(636, 282), //20
-      Offset(596, 280), //56
-      Offset(531, 272), //M
-      Offset(559, 152), //L
-      Offset(575, 163), //19
-      Offset(575, 246), //18
-      Offset(533, 326), //16
+      // Offset(651, 269), //24
+      //Offset(656, 280), //23
+      //Offset(636, 282), //20
+      //Offset(596, 280), //56
+      //Offset(531, 272), //M
+      //Offset(559, 152), //L
+      //Offset(575, 163), //19
+      //Offset(575, 246), //18
+      //Offset(533, 326), //16
     ];
     var paint1 = Paint()
       ..color = const Color.fromARGB(255, 107, 14, 14)
