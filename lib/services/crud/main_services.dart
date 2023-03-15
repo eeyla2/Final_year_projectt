@@ -1,5 +1,9 @@
 //This file translates database data into actual dart language that can be implemented
 
+import 'dart:io';
+import 'dart:typed_data';
+//import 'dart:ui';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
@@ -11,6 +15,412 @@ import 'package:quiver/core.dart';
 class MainService {
   Database? _db;
   //List<DatabaseRouteMaps> _main = [];
+
+//deletes all nodes
+  Future<int> deleteAllMaps() async {
+    final db = _getDatabaseOrThrow();
+
+    return await db.delete(routeMapTable);
+  }
+
+//get all the nodes
+  Future<Iterable<DatabaseRouteMap>> getAllMaps() async {
+    final db = _getDatabaseOrThrow();
+    final imageInfo = await db.query(routeMapTable);
+
+    return imageInfo
+        .map((routeMapRow) => DatabaseRouteMap.fromRow(routeMapRow));
+  }
+
+//deletes node using nodeId inserted
+  Future<void> deleteMaps({required int theImageInfoId}) async {
+    final db = _getDatabaseOrThrow(); //locates database
+
+//this returns the number of deleted nodes which can only be 0 or 1
+    final deletedCount = await db.delete(
+      routeMapTable, //choose the table to delete from in this case the nodesTable
+      where:
+          'route_map_id = ?', //delete as long as it is under the column 'id' and is equal to some value
+      whereArgs: [
+        theImageInfoId
+      ], //delete if its arguments are equal to that of the argument of this function
+    );
+
+//if deleted count is 0 then the user does not exist,
+//if it is 1 the the user was deleted
+
+//if deleted count was 0 and exception is thrown
+    if (deletedCount != 1) {
+      throw CouldNotDeleteMapImage();
+    }
+  }
+
+  Future<DatabaseRouteMap> updateMaps({
+    required DatabaseRouteMap theImageInfo,
+    required ImageInfo theImageInfoNew,
+  }) async {
+    final db = _getDatabaseOrThrow();
+
+    await getMaps(theImageInfoId: theImageInfo.id);
+
+    var imageFile = File(theImageInfoNew.mapFileName);
+    var imageAsBytes = await imageFile.readAsBytes();
+
+    final updateCount = await db.update(
+      routeMapTable,
+      {
+        mapFileNameColumn: theImageInfoNew.mapFileName,
+        mapsColumn: imageAsBytes,
+        totalWeightColumn: theImageInfoNew.totalWeight,
+      },
+    );
+
+    if (updateCount == 0) {
+      throw CouldNotUpdateMapImage();
+    } else {
+      return await getMaps(theImageInfoId: theImageInfo.id);
+    }
+  }
+
+//gets user from an email inserted
+  Future<DatabaseRouteMap> getMaps({required int theImageInfoId}) async {
+    final db = _getDatabaseOrThrow(); //locate database and store it
+
+    final results = await db.query(
+      routeMapTable, //choose nodes table
+      limit: 1, //only look for one node
+      where: 'route_map_Id = ?', // we are looking for x and y
+      whereArgs: [
+        theImageInfoId,
+      ], //the x and y we are looking for has the same content as our argument
+    );
+//if no results were returned throw an exception or return the map we are looking for
+//in the list created above
+    if (results.isNotEmpty) {
+      return DatabaseRouteMap.fromRow(results.first);
+    } else {
+      throw CouldNotFindMapImage();
+    }
+  }
+
+//create a new node
+  Future<DatabaseRouteMap> createMaps(ImageInfo theImageInfo) async {
+    final db = _getDatabaseOrThrow();
+
+    final resultlocation1 = await db.query(
+      routeMapTable, //checks user table
+      limit: 1, //in this case for only 1 item
+      where: 'location_1 = ?', //in this case we are looking for an x
+      whereArgs: [
+        theImageInfo.location1
+      ], //the x we are looking for is that similar to the argument's x variable
+    );
+
+    final resultlocation2 = await db.query(
+      routeMapTable, //checks user table
+      limit: 1, //in this case for only 1 item
+      where: 'location_2 = ?', //in this case we are looking for a y
+      whereArgs: [
+        theImageInfo.location2
+      ], //the y we are looking for is that similar to the argument y variable
+    );
+
+    final resultTotalWeight = await db.query(
+      routeMapTable, //checks user table
+      limit: 1, //in this case for only 1 item
+      where: 'total_weight = ?', //in this case we are looking for a y
+      whereArgs: [
+        theImageInfo.totalWeight
+      ], //the y we are looking for is that similar to the argument y variable
+    );
+
+//if the results variable is not empty that means there is an email similar to ours
+//in that case throw an exception
+    if ((resultlocation1.isNotEmpty) &&
+        (resultlocation2.isNotEmpty) &&
+        (resultTotalWeight.isNotEmpty)) {
+      throw MapImageAlreadyExists();
+    }
+
+//change imagefilename to a file so it can be converted into an image
+    var imageFile = File(theImageInfo.mapFileName);
+    var imageAsBytes = await imageFile.readAsBytes();
+
+//insert x and y variable of argument and return a node id
+    final routeMapId = await db.insert(
+      routeMapTable,
+      {
+        location1RouteMapColumn: theImageInfo.location1,
+        location2RouteMapColumn: theImageInfo.location2,
+        mapsColumn: imageAsBytes,
+        mapFileNameColumn: theImageInfo.mapFileName,
+        totalWeightColumn: theImageInfo.totalWeight,
+      },
+    );
+//return instance of database node using new nodeIdf
+    return DatabaseRouteMap(
+      id: routeMapId,
+      location_1: theImageInfo.location1,
+      location_2: theImageInfo.location2,
+      maps: imageAsBytes,
+      mapFileName: theImageInfo.mapFileName,
+      totalWeight: theImageInfo.totalWeight,
+    );
+  }
+
+//deletes all nodes
+  Future<int> deleteAllWeights() async {
+    final db = _getDatabaseOrThrow();
+
+    return await db.delete(nodesWeightsTable);
+  }
+
+//get all the nodes
+  Future<Iterable<DatabaseNodesWeights>> getAllWeights() async {
+    final db = _getDatabaseOrThrow();
+    final nodesWeight = await db.query(nodesWeightsTable);
+
+    return nodesWeight
+        .map((nodeWeightRow) => DatabaseNodesWeights.fromRow(nodeWeightRow));
+  }
+
+//deletes node using nodeId inserted
+  Future<void> deleteWeights({required int theNodesWeightId}) async {
+    final db = _getDatabaseOrThrow(); //locates database
+
+//this returns the number of deleted nodes which can only be 0 or 1
+    final deletedCount = await db.delete(
+      nodesWeightsTable, //choose the table to delete from in this case the nodesTable
+      where:
+          'id = ?', //delete as long as it is under the column 'id' and is equal to some value
+      whereArgs: [
+        theNodesWeightId
+      ], //delete if its arguments are equal to that of the argument of this function
+    );
+
+//if deleted count is 0 then the user does not exist,
+//if it is 1 the the user was deleted
+
+//if deleted count was 0 and exception is thrown
+    if (deletedCount != 1) {
+      throw CouldNotDeleteNodesWeight();
+    }
+  }
+
+  Future<DatabaseNodesWeights> updateWeights({
+    required DatabaseNodesWeights theNodesWeight,
+    required NodesWeight theNodesWeightNewInfo,
+  }) async {
+    final db = _getDatabaseOrThrow();
+
+    await getNodesWeights(theNodesWeightsId: theNodesWeight.id);
+
+    final updateCount = await db.update(
+      nodesWeightsTable,
+      {
+        node1Column: theNodesWeightNewInfo.node1,
+        node2Column: theNodesWeightNewInfo.node2,
+      },
+    );
+
+    if (updateCount == 0) {
+      throw CouldNotUpdateNode();
+    } else {
+      return await getNodesWeights(theNodesWeightsId: theNodesWeight.id);
+    }
+  }
+
+//gets user from an email inserted
+  Future<DatabaseNodesWeights> getNodesWeights(
+      {required int theNodesWeightsId}) async {
+    final db = _getDatabaseOrThrow(); //locate database and store it
+
+    final results = await db.query(
+      nodesWeightsTable, //choose nodes table
+      limit: 1, //only look for one node
+      where: 'weights_Id = ?', // we are looking for x and y
+      whereArgs: [
+        theNodesWeightsId,
+      ], //the x and y we are looking for has the same content as our argument
+    );
+//if no results were returned throw an exception or return the node we are looking for
+//in the list created above
+    if (results.isNotEmpty) {
+      return DatabaseNodesWeights.fromRow(results.first);
+    } else {
+      throw CouldNotFindNodesWeight();
+    }
+  }
+
+//create a new node
+  Future<DatabaseNodesWeights> createNodesWeights(
+      NodesWeight theWeights) async {
+    final db = _getDatabaseOrThrow();
+
+    final resultX = await db.query(
+      nodesWeightsTable, //checks user table
+      limit: 1, //in this case for only 1 item
+      where: 'node_1 = ?', //in this case we are looking for an x
+      whereArgs: [
+        theWeights.node1
+      ], //the x we are looking for is that similar to the argument's x variable
+    );
+
+    final resultY = await db.query(
+      nodesWeightsTable, //checks user table
+      limit: 1, //in this case for only 1 item
+      where: 'node_2 = ?', //in this case we are looking for a y
+      whereArgs: [
+        theWeights.node2
+      ], //the y we are looking for is that similar to the argument y variable
+    );
+
+//if the results variable is not empty that means there is an email similar to ours
+//in that case throw an exception
+    if ((resultX.isNotEmpty) && (resultY.isNotEmpty)) {
+      throw NodesWeightAlreadyExists();
+    }
+
+//insert x and y variable of argument and return a node id
+    final weightId = await db.insert(
+      nodesWeightsTable,
+      {
+        node1Column: theWeights.node1,
+        node2Column: theWeights.node2,
+      },
+    );
+//return instance of database node using new nodeIdf
+    return DatabaseNodesWeights(
+      id: weightId,
+      node_1: theWeights.node1,
+      node_2: theWeights.node1,
+      weight: theWeights.weight,
+    );
+  }
+
+//deletes all nodes
+  Future<int> deleteAllPointsInBetween() async {
+    final db = _getDatabaseOrThrow();
+
+    return await db.delete(routePointsInBetweenTable);
+  }
+
+//get all the nodes
+  Future<Iterable<DatabaseRoutePointsInBetween>> getAllPointsInBetween() async {
+    final db = _getDatabaseOrThrow();
+    final pointsInBetween = await db.query(routePointsInBetweenTable);
+
+    return pointsInBetween.map((pointsInBetweenRow) =>
+        DatabaseRoutePointsInBetween.fromRow(pointsInBetweenRow));
+  }
+
+//deletes node using nodeId inserted
+  Future<void> deletePointsInBetween(
+      {required int theRoutePointsInBetweenId}) async {
+    final db = _getDatabaseOrThrow(); //locates database
+
+//this returns the number of deleted nodes which can only be 0 or 1
+    final deletedCount = await db.delete(
+      routePointsInBetweenTable, //choose the table to delete from in this case the nodesTable
+      where:
+          'id = ?', //delete as long as it is under the column 'id' and is equal to some value
+      whereArgs: [
+        theRoutePointsInBetweenId
+      ], //delete if its arguments are equal to that of the argument of this function
+    );
+
+//if deleted count is 0 then the user does not exist,
+//if it is 1 the the user was deleted
+
+//if deleted count was 0 and exception is thrown
+    if (deletedCount != 1) {
+      throw CouldNotDeletePointsInBetween();
+    }
+  }
+
+  Future<DatabaseRoutePointsInBetween> updatePointsInBetween({
+    required DatabaseRoutePointsInBetween theRoutePointsInBetween,
+    required PointsInBetween theRoutePointsInBetweenNewInfo,
+  }) async {
+    final db = _getDatabaseOrThrow();
+
+    await getPointsInBetween(
+        theRoutePointsInBetweenId: theRoutePointsInBetween.id);
+
+    final updateCount = await db.update(
+      routePointsInBetweenTable,
+      {
+        pointsInBetweenColumn: theRoutePointsInBetweenNewInfo.pointsInBetween,
+      },
+    );
+
+    if (updateCount == 0) {
+      throw CouldNotUpdatePointsInBetween();
+    } else {
+      return await getPointsInBetween(
+          theRoutePointsInBetweenId: theRoutePointsInBetween.id);
+    }
+  }
+
+//gets user from an email inserted
+  Future<DatabaseRoutePointsInBetween> getPointsInBetween(
+      {required int theRoutePointsInBetweenId}) async {
+    final db = _getDatabaseOrThrow(); //locate database and store it
+
+    final results = await db.query(
+      nodesTable, //choose nodes table
+      limit: 1, //only look for one node
+      where: 'route_points_Id = ?', // we are looking for x and y
+      whereArgs: [
+        theRoutePointsInBetweenId,
+      ], //the x and y we are looking for has the same content as our argument
+    );
+//if no results were returned throw an exception or return the node we are looking for
+//in the list created above
+    if (results.isNotEmpty) {
+      return DatabaseRoutePointsInBetween.fromRow(results.first);
+    } else {
+      throw CouldNotFindRoutePointsInBetween();
+    }
+  }
+
+//create a new node
+  Future<DatabaseRoutePointsInBetween> createPointsInBetween(
+      PointsInBetween points) async {
+    final db = _getDatabaseOrThrow();
+
+    final results = await db.query(
+      routePointsInBetweenTable, //checks user table
+      where: 'points = ?', //in this case we are looking for an x
+      whereArgs: [
+        points.pointsInBetween,
+      ], //the x we are looking for is that similar to the argument's x variable
+    );
+
+//if the results variable is not empty that means there is an email similar to ours
+//in that case throw an exception
+    if ((results.isNotEmpty)) {
+      throw PointsInBetweenAlreadyExists();
+    }
+
+//insert 2 locations and points in between return an id for the pointsInBetweenThem
+    final pointsInBetweenId = await db.insert(
+      nodesTable,
+      {
+        location1RouteMapColumn: points.location1,
+        location2RouteMapColumn: points.location2,
+        pointsInBetweenColumn: points.pointsInBetween,
+      },
+    );
+
+//return instance of database node using new nodeIdf
+    return DatabaseRoutePointsInBetween(
+      id: pointsInBetweenId,
+      location_1: points.location1,
+      location_2: points.location2,
+      pointsInBetween: points.pointsInBetween,
+    );
+  }
 
 //deletes all nodes
   Future<int> deleteAllNodes() async {
@@ -35,7 +445,7 @@ class MainService {
     final deletedCount = await db.delete(
       nodesTable, //choose the table to delete from in this case the nodesTable
       where:
-          'id = ?', //delete as long as it is under the column 'id' and is equal to some value
+          'node_id = ?', //delete as long as it is under the column 'id' and is equal to some value
       whereArgs: [
         nodeId
       ], //delete if its arguments are equal to that of the argument of this function
@@ -46,35 +456,35 @@ class MainService {
 
 //if deleted count was 0 and exception is thrown
     if (deletedCount != 1) {
-      throw CouldNotDeleteNote();
+      throw CouldNotDeleteNode();
     }
   }
 
   Future<DatabaseNodes> updateNode({
-    required DatabaseNodes node,
-    required Coordinates nodeNewInfo,
+    required DatabaseNodes thenode,
+    required Coordinates thenodeNewInfo,
   }) async {
     final db = _getDatabaseOrThrow();
 
-    await getNode(nodeId: node.id);
+    await getNode(theId: thenode.id);
 
     final updateCount = await db.update(
       nodesTable,
       {
-        xColumn: node.x,
-        yColumn: node.y,
+        xColumn: thenode.x,
+        yColumn: thenode.y,
       },
     );
 
     if (updateCount == 0) {
       throw CouldNotUpdateNode();
     } else {
-      return await getNode(nodeId: node.id);
+      return await getNode(theId: thenode.id);
     }
   }
 
 //gets user from an email inserted
-  Future<DatabaseNodes> getNode({required nodeId}) async {
+  Future<DatabaseNodes> getNode({required int theId}) async {
     final db = _getDatabaseOrThrow(); //locate database and store it
 
 //ask if x exists and store the result as a list inside results
@@ -93,9 +503,9 @@ class MainService {
     final results = await db.query(
       nodesTable, //choose nodes table
       limit: 1, //only look for one node
-      where: 'nodeId = ?', // we are looking for x and y
+      where: 'node_Id = ?', // we are looking for x and y
       whereArgs: [
-        nodeId,
+        theId,
       ], //the x and y we are looking for has the same content as our argument
     );
 //if no results were returned throw an exception or return the node we are looking for
@@ -108,7 +518,7 @@ class MainService {
   }
 
 //create a new node
-  Future<DatabaseNodes> createNode(Coordinates node) async {
+  Future<DatabaseNodes> createNode(Coordinates thenode) async {
     final db = _getDatabaseOrThrow();
 
     final resultX = await db.query(
@@ -116,7 +526,7 @@ class MainService {
       limit: 1, //in this case for only 1 item
       where: 'x = ?', //in this case we are looking for an x
       whereArgs: [
-        node.x
+        thenode.x
       ], //the x we are looking for is that similar to the argument's x variable
     );
 
@@ -125,7 +535,7 @@ class MainService {
       limit: 1, //in this case for only 1 item
       where: 'y = ?', //in this case we are looking for a y
       whereArgs: [
-        node.y
+        thenode.y
       ], //the y we are looking for is that similar to the argument y variable
     );
 
@@ -139,20 +549,20 @@ class MainService {
     final nodeId = await db.insert(
       nodesTable,
       {
-        xColumn: node.x,
-        yColumn: node.y,
+        xColumn: thenode.x,
+        yColumn: thenode.y,
       },
     );
 //return instance of database node using new nodeIdf
     return DatabaseNodes(
       id: nodeId,
-      x: node.x,
-      y: node.y,
+      x: thenode.x,
+      y: thenode.y,
     );
   }
 
 //deletes user from an email inserted
-  Future<void> deleteUser({required String email}) async {
+  Future<void> deleteUser({required String theemail}) async {
     final db = _getDatabaseOrThrow(); //locates database
 
 //this returns the number of deleted users which can only be 0 or 1
@@ -161,7 +571,7 @@ class MainService {
       where:
           'email = ?', //delete as long as it is under the column 'email' and is equal to some value
       whereArgs: [
-        email.toLowerCase()
+        theemail.toLowerCase()
       ], //delete if its arguments are equal to that of the argument of this function
     );
 
@@ -175,7 +585,7 @@ class MainService {
   }
 
 //gets user from an email inserted
-  Future<DatabaseUser> getUser({required String email}) async {
+  Future<DatabaseUser> getUser({required String theemail}) async {
     final db = _getDatabaseOrThrow(); //locate database and store it
 
 //ask if email exists and store the result as a list inside results
@@ -184,7 +594,7 @@ class MainService {
       limit: 1, //only look for one email
       where: 'email = ?', // we are looking for email
       whereArgs: [
-        email.toLowerCase()
+        theemail.toLowerCase()
       ], //the email we are looking for has the same content as our argument
     );
 
@@ -198,7 +608,7 @@ class MainService {
   }
 
 //creates a user from an email inserted
-  Future<DatabaseUser> createUser({required String email}) async {
+  Future<DatabaseUser> createUser({required String theemail}) async {
     final db = _getDatabaseOrThrow(); //locates database
 
     //asking if there is an email similar to the email we want to create
@@ -210,7 +620,7 @@ class MainService {
       limit: 1, //in this case for only 1 item
       where: 'email = ?', //in this case we are looking for an email
       whereArgs: [
-        email.toLowerCase()
+        theemail.toLowerCase()
       ], //the email we are looking for is that similar to the argument of the function
     );
 
@@ -224,14 +634,14 @@ class MainService {
     final userId = await db.insert(
         userTable, // choose usertable
         {
-          emailColumn: email
+          emailColumn: theemail
               .toLowerCase(), //insert the email argument into the emailColumn
         });
 
 //return an instance of the databaseuser with the userId returned and email argument
     return DatabaseUser(
       id: userId,
-      email: email,
+      email: theemail,
     );
   }
 
@@ -288,7 +698,7 @@ class MainService {
       await db.execute(createWeightsTable);
 
       //create routePointsTable table ONLY if it does not exist and then execute it
-      await db.execute(createRoutePointsTable);
+      await db.execute(createRoutePointsInBetweenTable);
     } on MissingPlatformDirectoryException {
       //if the MissingPlatformDirectory exception is thrown then our own exception is thrown
       throw UnableToGetDocumentException();
@@ -353,23 +763,31 @@ class DatabaseNodes {
 class DatabaseRouteMap {
   //variables
   final int id;
-  final Blob maps;
+  final Uint8List maps;
+  final String mapFileName;
   final int location_1;
   final int location_2;
+  final int totalWeight;
 
 //constructor
   DatabaseRouteMap({
     required this.id,
     required this.maps,
+    required this.mapFileName,
     required this.location_1,
     required this.location_2,
+    required this.totalWeight,
   });
+
+  //String photo(String mapName)
 
   DatabaseRouteMap.fromRow(Map<String, Object?> map)
       : id = map[routeMapIdColumn] as int,
-        maps = map[mapsColumn] as Blob,
+        maps = map[mapsColumn] as Uint8List,
+        mapFileName = map[mapFileNameColumn] as String,
         location_1 = map[location1RouteMapColumn] as int,
-        location_2 = map[location2RouteMapColumn] as int;
+        location_2 = map[location2RouteMapColumn] as int,
+        totalWeight = map[totalWeightColumn] as int;
 
   @override
   String toString() =>
@@ -382,7 +800,7 @@ class DatabaseRouteMap {
   int get hashCode => id.hashCode;
 }
 
-class DatabaseWeights {
+class DatabaseNodesWeights {
   //variables
   final int id;
   final int node_1;
@@ -390,14 +808,14 @@ class DatabaseWeights {
   final int weight;
 
 //constructor
-  DatabaseWeights({
+  DatabaseNodesWeights({
     required this.id,
     required this.node_1,
     required this.node_2,
     required this.weight,
   });
 
-  DatabaseWeights.fromRow(Map<String, Object?> map)
+  DatabaseNodesWeights.fromRow(Map<String, Object?> map)
       : id = map[weightsIdColumn] as int,
         node_1 = map[xColumn] as int,
         node_2 = map[yColumn] as int,
@@ -414,30 +832,30 @@ class DatabaseWeights {
   int get hashCode => id.hashCode;
 }
 
-class DatabaseRoutePoints {
+class DatabaseRoutePointsInBetween {
   //variables
   final int id;
   final int location_1;
   final int location_2;
-  final int points;
+  final int pointsInBetween;
 
 //constructor
-  DatabaseRoutePoints({
+  DatabaseRoutePointsInBetween({
     required this.id,
     required this.location_1,
     required this.location_2,
-    required this.points,
+    required this.pointsInBetween,
   });
 
-  DatabaseRoutePoints.fromRow(Map<String, Object?> map)
+  DatabaseRoutePointsInBetween.fromRow(Map<String, Object?> map)
       : id = map[routePointsIdColumn] as int,
         location_1 = map[location1RouteMapColumn] as int,
         location_2 = map[location2RouteMapColumn] as int,
-        points = map[pointsColumn] as int;
+        pointsInBetween = map[pointsInBetweenColumn] as int;
 
   @override
   String toString() =>
-      'Route points , ID = $id, starting location = $location_1, ending node = $location_2, weight =$points';
+      'Route points , ID = $id, starting location = $location_1, ending node = $location_2, weight =$pointsInBetween';
 
   @override
   bool operator ==(covariant DatabaseUser other) => id == other.id;
@@ -470,18 +888,102 @@ class Coordinates {
   int get hashCode => hash2(x.hashCode, y.hashCode);
 }
 
+//stores location 1 and location 2 and the points between them if you take the lightest path
+class PointsInBetween {
+  final int location1, location2, pointsInBetween;
+
+  PointsInBetween(
+      {required this.location1,
+      required this.location2,
+      required this.pointsInBetween});
+
+  @override
+  String toString() =>
+      'Points in between ,  Points = $pointsInBetween, starting location = $location1, end location  = $location2';
+
+//comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
+  @override
+  bool operator ==(covariant PointsInBetween other) =>
+      pointsInBetween == other.pointsInBetween;
+
+  //hashcode for overriden == operator
+  @override
+  int get hashCode => pointsInBetween.hashCode;
+}
+
+class NodesWeight {
+  final int node1;
+  final int node2;
+  final int weight;
+
+  NodesWeight(this.node1, this.node2, this.weight);
+
+  @override
+  String toString() =>
+      'weight between two nodes ,  node1 = $node1, node2 = $node2, weight = $weight';
+
+//comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
+  @override
+  bool operator ==(covariant NodesWeight other) {
+    //comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
+    if ((node1 == other.node1) && (node2 == other.node2)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  //hashcode for overriden == operator
+  @override
+  int get hashCode => hash2(node1.hashCode, node2.hashCode);
+}
+
+class ImageInfo {
+  final int location1;
+  final int location2;
+  Uint8List mapImage;
+  final String mapFileName;
+  final int totalWeight;
+
+  ImageInfo(this.location1, this.location2, this.totalWeight, this.mapImage,
+      this.mapFileName);
+
+  @override
+  String toString() =>
+      'total route weight, location1 = $location1, location2 = $location2, weight = $totalWeight, file name =$mapFileName';
+
+//comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
+  @override
+  bool operator ==(covariant ImageInfo other) {
+    //comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
+    if ((location1 == other.location1) &&
+        (location2 == other.location2) &&
+        (totalWeight == other.totalWeight)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  //hashcode for overriden == operator
+  @override
+  int get hashCode =>
+      hash3(location1.hashCode, location2.hashCode, totalWeight);
+}
+
 const dbName = 'legsfree.db';
 const userTable = 'user';
 const nodesTable = 'nodes';
 const routeMapTable = 'route_map';
-const weightsTable = 'weights';
-const routepointsTable = 'route_points';
+const nodesWeightsTable = 'weights';
+const routePointsInBetweenTable = 'route_points';
 const userIdColumn = 'user_id';
 const emailColumn = 'email';
 const nodesIdColumn = 'node_id';
 const xColumn = 'x';
 const yColumn = 'y';
 const routeMapIdColumn = 'route_map__id';
+const mapFileNameColumn = 'map_name';
 const mapsColumn = 'maps';
 const location1RouteMapColumn = 'location_1';
 const location2RouteMapColumn = 'location_2';
@@ -493,7 +995,7 @@ const weightColumn = 'weight';
 const routePointsIdColumn = 'route_points_id';
 const location1RoutePointsColumn = 'location_1';
 const location2RoutePointsColumn = 'location_2';
-const pointsColumn = 'points';
+const pointsInBetweenColumn = 'points';
 const createUserTable = '''CREATE TABLE IF NOT EXISTS "user" (
 	"user_id"	INTEGER NOT NULL,
 	"email"	TEXT NOT NULL UNIQUE,
@@ -513,18 +1015,20 @@ const createRouteMapsTable = '''CREATE TABLE IF NOT EXISTS "route_map" (
 	"total_weight"	INTEGER NOT NULL,
 	"location_1"	INTEGER NOT NULL,
 	"location_2"	INTEGER NOT NULL,
+  "map_name"	TEXT NOT NULL,
 	PRIMARY KEY("route_map_id" AUTOINCREMENT)
 );''';
 
-const createWeightsTable = '''CREATE TABLE "weights" (
-	"node 1"	INTEGER NOT NULL,
-	"node 2"	INTEGER NOT NULL,
+const createWeightsTable = '''CREATE TABLE IF NOT EXISTS "weights" (
+	"node_1"	INTEGER NOT NULL,
+	"node_2"	INTEGER NOT NULL,
 	"weight"	INTEGER NOT NULL,
 	"weights_id"	INTEGER NOT NULL,
 	PRIMARY KEY("weights_id" AUTOINCREMENT)
 );''';
 
-const createRoutePointsTable = '''CREATE TABLE IF NOT EXISTS "route_points" (
+const createRoutePointsInBetweenTable =
+    '''CREATE TABLE IF NOT EXISTS "route_points" (
 	"route_points_id"	INTEGER NOT NULL,
 	"location_1"	INTEGER NOT NULL,
 	"location_2"	INTEGER NOT NULL,
