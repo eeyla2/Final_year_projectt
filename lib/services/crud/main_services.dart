@@ -1,5 +1,6 @@
 //This file translates database data into actual dart language that can be implemented
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 //import 'dart:ui';
@@ -13,14 +14,43 @@ import 'crud_exceptions.dart';
 import 'package:quiver/core.dart';
 
 class MainService {
-  Database? _db;
-  //List<DatabaseRouteMaps> _main = [];
+  Database? _db; // stores database
+  List<DatabaseRouteMap> _maps = []; //stores list of maps
+
+//creates a stream of a list of DtabaseRouteMap which would keep track of the changes in _maps in this case
+  final _mapsStreamController =
+      StreamController<List<DatabaseRouteMap>>.broadcast();
+
+  Future<DatabaseUser> getOrCreateUser({required String theemail}) async {
+    try {
+      final user = await getUser(theemail: theemail);
+      return user;
+    } on CouldNotFindUser {
+      final createAUser = await createUser(theemail: theemail);
+      return createAUser;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+//stores database inside variable _maps
+  Future<void> _cacheMaps() async {
+    final allMaps = await getAllMaps(); //get all maps
+    _maps = allMaps
+        .toList(); //changes iterable to list (remember an underscore means the variable is private to this class and it has to be used somewhere else publically)
+    _mapsStreamController.add(_maps); //add it to stream
+  }
 
 //deletes all nodes
   Future<int> deleteAllMaps() async {
     final db = _getDatabaseOrThrow();
+    final numberOfDeletions = await db.delete(routeMapTable);
 
-    return await db.delete(routeMapTable);
+    //delete maps from stream
+    _maps = [];
+    _mapsStreamController.add(_maps);
+
+    return numberOfDeletions;
   }
 
 //get all the nodes
@@ -52,6 +82,10 @@ class MainService {
 //if deleted count was 0 and exception is thrown
     if (deletedCount != 1) {
       throw CouldNotDeleteMapImage();
+    } else {
+      //delete from stream and the list
+      _maps.removeWhere((map) => map.id == theImageInfoId);
+      _mapsStreamController.add(_maps);
     }
   }
 
@@ -61,24 +95,34 @@ class MainService {
   }) async {
     final db = _getDatabaseOrThrow();
 
+//make sure map exists
     await getMaps(theImageInfoId: theImageInfo.id);
 
     var imageFile = File(theImageInfoNew.mapFileName);
     var imageAsBytes = await imageFile.readAsBytes();
 
+//update database
     final updateCount = await db.update(
       routeMapTable,
       {
         mapFileNameColumn: theImageInfoNew.mapFileName,
         mapsColumn: imageAsBytes,
         totalWeightColumn: theImageInfoNew.totalWeight,
+        journeyNameColumn: theImageInfoNew.journeyName,
+        weightClassMapsColumn: theImageInfoNew.weightClass,
+        isKnownColumn: theImageInfoNew.isKnown,
       },
     );
 
     if (updateCount == 0) {
       throw CouldNotUpdateMapImage();
     } else {
-      return await getMaps(theImageInfoId: theImageInfo.id);
+      final updatedMap =
+          await getMaps(theImageInfoId: theImageInfo.id); //get updated value
+      _maps.removeWhere((map) => map.id == updatedMap.id); //remove from stream
+      _maps.add(updatedMap); // update list with mew updated value
+      _mapsStreamController.add(_maps); // update stream with new updated list
+      return updatedMap;
     }
   }
 
@@ -97,7 +141,17 @@ class MainService {
 //if no results were returned throw an exception or return the map we are looking for
 //in the list created above
     if (results.isNotEmpty) {
-      return DatabaseRouteMap.fromRow(results.first);
+      final map = DatabaseRouteMap.fromRow(results.first);
+
+      //remove existing map from stream with the same identity of our updated value
+      _maps.removeWhere((map) => map.id == theImageInfoId);
+
+      //after removing the old value we insert the new value into the local list cache and the stream
+      //NOTE: in this case we are only updating the stream so the value is not affected, but the rather it is like we are getting updating it's status
+      _maps.add(map);
+      _mapsStreamController.add(_maps);
+
+      return map;
     } else {
       throw CouldNotFindMapImage();
     }
@@ -155,17 +209,29 @@ class MainService {
         mapsColumn: imageAsBytes,
         mapFileNameColumn: theImageInfo.mapFileName,
         totalWeightColumn: theImageInfo.totalWeight,
+        journeyNameColumn: theImageInfo.journeyName,
+        weightClassMapsColumn: theImageInfo.weightClass,
+        isKnownColumn: theImageInfo.isKnown,
       },
     );
 //return instance of database node using new nodeIdf
-    return DatabaseRouteMap(
+    final map = DatabaseRouteMap(
       id: routeMapId,
       location_1: theImageInfo.location1,
       location_2: theImageInfo.location2,
       maps: imageAsBytes,
       mapFileName: theImageInfo.mapFileName,
       totalWeight: theImageInfo.totalWeight,
+      journeyName: theImageInfo.journeyName,
+      weightClass: theImageInfo.weightClass,
+      isKnown: theImageInfo.isKnown,
     );
+
+//add new map to list of maps and update the streamcontroller
+    _maps.add(map);
+    _mapsStreamController.add(_maps);
+
+    return map;
   }
 
 //deletes all nodes
@@ -220,6 +286,8 @@ class MainService {
       {
         node1Column: theNodesWeightNewInfo.node1,
         node2Column: theNodesWeightNewInfo.node2,
+        weightColumn: theNodesWeightNewInfo.weight,
+        weightClassWeightsColumn: theNodesWeightNewInfo.weightClass,
       },
     );
 
@@ -275,9 +343,20 @@ class MainService {
       ], //the y we are looking for is that similar to the argument y variable
     );
 
+    final resultWeightClass = await db.query(
+      nodesWeightsTable, //checks user table
+      limit: 1, //in this case for only 1 item
+      where: 'weight_class = ?', //in this case we are looking for a y
+      whereArgs: [
+        theWeights.weightClass
+      ], //the y we are looking for is that similar to the argument y variable
+    );
+
 //if the results variable is not empty that means there is an email similar to ours
 //in that case throw an exception
-    if ((resultX.isNotEmpty) && (resultY.isNotEmpty)) {
+    if ((resultX.isNotEmpty) &&
+        (resultY.isNotEmpty) &&
+        (resultWeightClass.isNotEmpty)) {
       throw NodesWeightAlreadyExists();
     }
 
@@ -287,6 +366,8 @@ class MainService {
       {
         node1Column: theWeights.node1,
         node2Column: theWeights.node2,
+        weightColumn: theWeights.weight,
+        weightClassWeightsColumn: theWeights.weightClass,
       },
     );
 //return instance of database node using new nodeIdf
@@ -295,6 +376,7 @@ class MainService {
       node_1: theWeights.node1,
       node_2: theWeights.node1,
       weight: theWeights.weight,
+      weightClass: theWeights.weightClass,
     );
   }
 
@@ -391,9 +473,9 @@ class MainService {
 
     final results = await db.query(
       routePointsInBetweenTable, //checks user table
-      where: 'points = ?', //in this case we are looking for an x
+      where: 'route_id = ?', //in this case we are looking for an x
       whereArgs: [
-        points.pointsInBetween,
+        points.routeId,
       ], //the x we are looking for is that similar to the argument's x variable
     );
 
@@ -410,6 +492,8 @@ class MainService {
         location1RouteMapColumn: points.location1,
         location2RouteMapColumn: points.location2,
         pointsInBetweenColumn: points.pointsInBetween,
+        routeIdColumn: points.routeId,
+        positionColumn: points.position,
       },
     );
 
@@ -419,6 +503,8 @@ class MainService {
       location_1: points.location1,
       location_2: points.location2,
       pointsInBetween: points.pointsInBetween,
+      routeId: points.routeId,
+      position: points.position,
     );
   }
 
@@ -473,6 +559,7 @@ class MainService {
       {
         xColumn: thenode.x,
         yColumn: thenode.y,
+        isSelectableColumn: thenode.isSelectable,
       },
     );
 
@@ -486,19 +573,6 @@ class MainService {
 //gets user from an email inserted
   Future<DatabaseNodes> getNode({required int theId}) async {
     final db = _getDatabaseOrThrow(); //locate database and store it
-
-//ask if x exists and store the result as a list inside results
-    /* final results = await db.query(
-      nodesTable, //choose nodes table
-      limit: 1, //only look for one node
-      where: 'x = ? and y = ?', // we are looking for x and y
-
-      whereArgs: [
-        node.x,
-        node.y,
-      ], //the x and y we are looking for has the same content as our argument
-    );
-*/
 
     final results = await db.query(
       nodesTable, //choose nodes table
@@ -551,6 +625,7 @@ class MainService {
       {
         xColumn: thenode.x,
         yColumn: thenode.y,
+        isSelectableColumn: thenode.isSelectable,
       },
     );
 //return instance of database node using new nodeIdf
@@ -558,6 +633,7 @@ class MainService {
       id: nodeId,
       x: thenode.x,
       y: thenode.y,
+      isSelectable: thenode.isSelectable,
     );
   }
 
@@ -699,6 +775,7 @@ class MainService {
 
       //create routePointsTable table ONLY if it does not exist and then execute it
       await db.execute(createRoutePointsInBetweenTable);
+      await _cacheMaps(); // stores database inside variable _maps
     } on MissingPlatformDirectoryException {
       //if the MissingPlatformDirectory exception is thrown then our own exception is thrown
       throw UnableToGetDocumentException();
@@ -737,21 +814,25 @@ class DatabaseNodes {
   final int id;
   final int x;
   final int y;
+  final int isSelectable;
 
 //constructor
   DatabaseNodes({
     required this.id,
     required this.x,
     required this.y,
+    required this.isSelectable,
   });
 
   DatabaseNodes.fromRow(Map<String, Object?> map)
       : id = map[nodesIdColumn] as int,
         x = map[xColumn] as int,
-        y = map[yColumn] as int;
+        y = map[yColumn] as int,
+        isSelectable = map[isSelectableColumn] as int;
 
   @override
-  String toString() => 'Nodes , ID = $id, x-coordinate = $x, y-coordinate = $y';
+  String toString() =>
+      'Nodes , ID = $id, x-coordinate = $x, y-coordinate = $y, Is it selectable = $isSelectable';
 
   @override
   bool operator ==(covariant DatabaseUser other) => id == other.id;
@@ -768,6 +849,9 @@ class DatabaseRouteMap {
   final int location_1;
   final int location_2;
   final int totalWeight;
+  final String journeyName;
+  final int weightClass;
+  final bool isKnown;
 
 //constructor
   DatabaseRouteMap({
@@ -777,6 +861,9 @@ class DatabaseRouteMap {
     required this.location_1,
     required this.location_2,
     required this.totalWeight,
+    required this.journeyName,
+    required this.weightClass,
+    required this.isKnown,
   });
 
   //String photo(String mapName)
@@ -787,11 +874,14 @@ class DatabaseRouteMap {
         mapFileName = map[mapFileNameColumn] as String,
         location_1 = map[location1RouteMapColumn] as int,
         location_2 = map[location2RouteMapColumn] as int,
-        totalWeight = map[totalWeightColumn] as int;
+        totalWeight = map[totalWeightColumn] as int,
+        journeyName = map[journeyNameColumn] as String,
+        weightClass = map[weightClassWeightsColumn] as int,
+        isKnown = map[isKnownColumn] as bool;
 
   @override
   String toString() =>
-      'Route_maps , ID = $id, location 1 = $location_1, location_2 = $location_2';
+      'Route_maps , ID = $id, location 1 = $location_1, location 2 = $location_2, weight class = $weightClass, journeyName = $journeyName';
 
   @override
   bool operator ==(covariant DatabaseUser other) => id == other.id;
@@ -806,6 +896,7 @@ class DatabaseNodesWeights {
   final int node_1;
   final int node_2;
   final int weight;
+  final int weightClass;
 
 //constructor
   DatabaseNodesWeights({
@@ -813,13 +904,15 @@ class DatabaseNodesWeights {
     required this.node_1,
     required this.node_2,
     required this.weight,
+    required this.weightClass,
   });
 
   DatabaseNodesWeights.fromRow(Map<String, Object?> map)
       : id = map[weightsIdColumn] as int,
         node_1 = map[xColumn] as int,
         node_2 = map[yColumn] as int,
-        weight = map[weightColumn] as int;
+        weight = map[weightColumn] as int,
+        weightClass = map[weightClassWeightsColumn] as int;
 
   @override
   String toString() =>
@@ -838,6 +931,8 @@ class DatabaseRoutePointsInBetween {
   final int location_1;
   final int location_2;
   final int pointsInBetween;
+  final int routeId;
+  final int position;
 
 //constructor
   DatabaseRoutePointsInBetween({
@@ -845,13 +940,17 @@ class DatabaseRoutePointsInBetween {
     required this.location_1,
     required this.location_2,
     required this.pointsInBetween,
+    required this.routeId,
+    required this.position,
   });
 
   DatabaseRoutePointsInBetween.fromRow(Map<String, Object?> map)
       : id = map[routePointsIdColumn] as int,
         location_1 = map[location1RouteMapColumn] as int,
         location_2 = map[location2RouteMapColumn] as int,
-        pointsInBetween = map[pointsInBetweenColumn] as int;
+        pointsInBetween = map[pointsInBetweenColumn] as int,
+        routeId = map[routeIdColumn] as int,
+        position = map[routeIdColumn] as int;
 
   @override
   String toString() =>
@@ -866,12 +965,12 @@ class DatabaseRoutePointsInBetween {
 
 //stores x and y coordinates
 class Coordinates {
-  final int x, y;
+  final int x, y, isSelectable;
 
-  Coordinates({required this.x, required this.y});
+  Coordinates({required this.x, required this.y, required this.isSelectable});
 
   @override
-  String toString() => 'coordinates , x= $x, starting location = $y';
+  String toString() => 'coordinates, x = $x, y = $y';
 
 //comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
   @override
@@ -890,12 +989,15 @@ class Coordinates {
 
 //stores location 1 and location 2 and the points between them if you take the lightest path
 class PointsInBetween {
-  final int location1, location2, pointsInBetween;
+  final int location1, location2, pointsInBetween, routeId, position;
 
-  PointsInBetween(
-      {required this.location1,
-      required this.location2,
-      required this.pointsInBetween});
+  PointsInBetween({
+    required this.location1,
+    required this.location2,
+    required this.pointsInBetween,
+    required this.routeId,
+    required this.position,
+  });
 
   @override
   String toString() =>
@@ -915,12 +1017,13 @@ class NodesWeight {
   final int node1;
   final int node2;
   final int weight;
+  final int weightClass;
 
-  NodesWeight(this.node1, this.node2, this.weight);
+  NodesWeight(this.node1, this.node2, this.weight, this.weightClass);
 
   @override
   String toString() =>
-      'weight between two nodes ,  node1 = $node1, node2 = $node2, weight = $weight';
+      'weight between two nodes ,  node1 = $node1, node2 = $node2, weight = $weight, weightClass = $weightClass';
 
 //comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
   @override
@@ -944,13 +1047,16 @@ class ImageInfo {
   Uint8List mapImage;
   final String mapFileName;
   final int totalWeight;
+  final String journeyName;
+  final int weightClass;
+  final bool isKnown;
 
   ImageInfo(this.location1, this.location2, this.totalWeight, this.mapImage,
-      this.mapFileName);
+      this.mapFileName, this.journeyName, this.weightClass, this.isKnown);
 
   @override
   String toString() =>
-      'total route weight, location1 = $location1, location2 = $location2, weight = $totalWeight, file name =$mapFileName';
+      'total route weight, location1 = $location1, location2 = $location2, weight = $totalWeight, file name =$mapFileName, Journey =$journeyName, Weight class =$weightClass';
 
 //comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
   @override
@@ -982,20 +1088,27 @@ const emailColumn = 'email';
 const nodesIdColumn = 'node_id';
 const xColumn = 'x';
 const yColumn = 'y';
-const routeMapIdColumn = 'route_map__id';
+const isSelectableColumn = 'isSelectable';
+const routeMapIdColumn = 'route_map_id';
 const mapFileNameColumn = 'map_name';
 const mapsColumn = 'maps';
 const location1RouteMapColumn = 'location_1';
 const location2RouteMapColumn = 'location_2';
 const totalWeightColumn = 'total_weight';
+const journeyNameColumn = 'journey_name';
+const weightClassMapsColumn = 'weight_class';
+const isKnownColumn = 'isKnown';
 const weightsIdColumn = 'weights_Id';
 const node1Column = 'node_1';
 const node2Column = 'node_2';
 const weightColumn = 'weight';
+const weightClassWeightsColumn = 'weight_class';
 const routePointsIdColumn = 'route_points_id';
 const location1RoutePointsColumn = 'location_1';
 const location2RoutePointsColumn = 'location_2';
 const pointsInBetweenColumn = 'points';
+const routeIdColumn = 'route_id';
+const positionColumn = 'position';
 const createUserTable = '''CREATE TABLE IF NOT EXISTS "user" (
 	"user_id"	INTEGER NOT NULL,
 	"email"	TEXT NOT NULL UNIQUE,
@@ -1006,6 +1119,7 @@ const createNodesTable = '''CREATE TABLE IF NOT EXISTS "nodes" (
 	"node_id"	INTEGER NOT NULL,
 	"x"	INTEGER NOT NULL,
 	"y"	INTEGER NOT NULL,
+  "isSelectable"	INTEGER NOT NULL,
 	PRIMARY KEY("node_id" AUTOINCREMENT)
 );''';
 
@@ -1016,6 +1130,9 @@ const createRouteMapsTable = '''CREATE TABLE IF NOT EXISTS "route_map" (
 	"location_1"	INTEGER NOT NULL,
 	"location_2"	INTEGER NOT NULL,
   "map_name"	TEXT NOT NULL,
+  "journey_name"	TEXT NOT NULL,
+	"weight_class"	INTEGER NOT NULL,
+	"isKnown"	INTEGER NOT NULL,
 	PRIMARY KEY("route_map_id" AUTOINCREMENT)
 );''';
 
@@ -1024,6 +1141,7 @@ const createWeightsTable = '''CREATE TABLE IF NOT EXISTS "weights" (
 	"node_2"	INTEGER NOT NULL,
 	"weight"	INTEGER NOT NULL,
 	"weights_id"	INTEGER NOT NULL,
+  "weight_class"	INTEGER NOT NULL,
 	PRIMARY KEY("weights_id" AUTOINCREMENT)
 );''';
 
@@ -1033,5 +1151,8 @@ const createRoutePointsInBetweenTable =
 	"location_1"	INTEGER NOT NULL,
 	"location_2"	INTEGER NOT NULL,
 	"points"	INTEGER NOT NULL,
-	PRIMARY KEY("route_points_id" AUTOINCREMENT)
+	"route_id"	INTEGER NOT NULL,
+	"position"	INTEGER NOT NULL,
+	PRIMARY KEY("route_points_id" AUTOINCREMENT),
+	FOREIGN KEY("route_id") REFERENCES "route_map"("route_map_id")
 );''';
