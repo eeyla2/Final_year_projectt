@@ -1,16 +1,21 @@
 import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:flutter/material.dart';
 
+//immutable means the class needs to have all it's fields finalized once they are initialized
 @immutable
 class AuthUser {
+  final String? email;
   final bool isEmailVerified;
 
-  const AuthUser({required this.isEmailVerified});
+//constructor
+  const AuthUser({
+    required this.email,
+    required this.isEmailVerified,
+  });
 
-  factory AuthUser.fromFirebase(User user) =>
-      AuthUser(isEmailVerified: user.emailVerified);
+//copies user from firebase into the AuthUser class creating an instance of it
+  factory AuthUser.fromFirebase(User user) => AuthUser(
+        email: user.email,
+        isEmailVerified: user.emailVerified,
+      );
 }
-
-//class MyAuthUser extends AuthUser {
-  //const MyAuthUser(super.isEmailVerified);
-//}

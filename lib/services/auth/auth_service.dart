@@ -2,6 +2,8 @@ import 'package:legsfree/services/auth/auth_provider.dart';
 import 'package:legsfree/services/auth/auth_user.dart';
 import 'package:legsfree/services/auth/firebase_auth_provider.dart';
 
+//exposes the functionality of the authentication provider to the outside world
+
 class AuthService implements AuthProvider {
   final AuthProvider provider;
 

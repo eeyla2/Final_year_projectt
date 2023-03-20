@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:legsfree/services/auth/auth_exceptions.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 import 'package:legsfree/utilities/show_error_dialog.dart';
@@ -79,8 +80,9 @@ class _RegisterViewState extends State<RegisterView> {
                   password: password,
                 );
                 AuthService.firebase().sendEmailVerification();
-                Navigator.of(context)
-                    .pushNamed(verifyEmailRoute); //push and don't remove
+                SchedulerBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushNamed(verifyEmailRoute);
+                }); //push and don't remove
               } on WeakPasswordAuthException {
                 //if exception is weak-password print weak password in terminal
                 await showErrorDialog(context, 'Weak password');

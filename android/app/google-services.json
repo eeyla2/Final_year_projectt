@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "962506045459-rhrpf0mj9130q9hlthnfs5vhb68su2qb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.legsfree.legsfree",
+            "certificate_hash": "21d4a86985a57ef896a124373c253e7d6652a991"
+          }
+        },
+        {
           "client_id": "962506045459-b2j273d8am8shmieququguscsm5pcgl1.apps.googleusercontent.com",
           "client_type": 3
         }

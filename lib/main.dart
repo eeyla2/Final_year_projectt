@@ -1,23 +1,41 @@
 //import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'dart:async';
+//import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:legsfree/error_handling/error_handler.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
-import 'package:legsfree/views/main_view.dart';
+import 'package:legsfree/views/maps/maps_view.dart';
+import 'package:legsfree/views/maps/new_maps_view.dart';
 import 'package:location/location.dart';
-import 'package:legsfree/firebase_options.dart';
+import 'package:flutter/foundation.dart';
+//import 'package:legsfree/firebase_options.dart';
 import 'package:legsfree/views/login_view.dart';
 import 'package:legsfree/views/register_view.dart';
 import 'package:legsfree/views/verify_email_view.dart';
 import 'constants/routes.dart';
 import 'dart:developer' as devtools show log;
+
 //import 'package:floating_search_bar/floating_search_bar.dart';
 
 //import 'dart:developer' as devtools show log;
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+//MyErrorsHandler
+/*
+  await MyErrorsHandler.initialize();
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    MyErrorsHandler.onErrorDetails(details);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    MyErrorsHandler.onError(error, stack);
+    return true;
+  };
+  */
   runApp(
     //place MaterialApp in here for effeciency instead of using MyApp widget
     MaterialApp(
@@ -25,14 +43,28 @@ void main() {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: const MainView(),
+        home: const HomePage(),
+/*
+        //To define a customized error widget that displays whenever the builder fails to build a widget
+        builder: (context, widget) {
+          Widget error = const Text('...rendering error...');
+          if (widget is Scaffold || widget is Navigator) {
+            error = Scaffold(body: Center(child: error));
+          }
+
+          ErrorWidget.builder = (errorDetails) => error;
+          if (widget != null) return widget;
+          throw ('widget is null');
+        },
+*/
         //HomePage(),
         routes: {
           //mapping different routes
           loginRoute: (context) => const LoginView(),
           registerRoute: (context) => const RegisterView(),
-          mainRoute: (context) => const MainView(),
+          mapsRoute: (context) => const MainView(),
           verifyEmailRoute: (context) => const VerifyEmailView(),
+          newMapsRoute: (context) => const NewMapsView(),
         }),
   );
 }
@@ -65,7 +97,7 @@ class HomePage extends StatelessWidget {
               //if user not entered show loginview and from there you can go to registerview if you want
               return const LoginView();
             }
-            return const Text('done');
+          //return const Text('done');
           default: //in all other cases
             return const CircularProgressIndicator(); //if the app is not connected yet show a circular indicator
         }
@@ -135,32 +167,20 @@ class LocationCircles extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const pointMode = ui.PointMode.polygon; // drawing as a polygon
     const points = [
-      //the points the line will drawe in between
+      //the points the line will draw in between
       Offset(650, 180), //22
       Offset(645, 171), //Y101
       Offset(633, 156), //Y102
-      Offset(633, 165), //W101
-      Offset(633, 170), //W102
-      Offset(630, 185), //W103
-      Offset(628, 187), //W104
-      Offset(626, 192), //W105
-      Offset(618, 200), //W106
-      Offset(614, 202), //W107
-      Offset(614, 203), //W108
-      Offset(610, 210), //W109
-      Offset(608, 214), //W110
-      Offset(607, 218), //W111
-      Offset(610, 226), //W112
-      Offset(615, 232), //W113
-      Offset(620, 244), //W114
-      Offset(622, 248), //W115
-      Offset(624, 252), //W116
-      Offset(620, 260), //W117
+      Offset(635, 170), //W101
+      Offset(626, 192), //W102
+      Offset(614, 202), //W103
+      Offset(607, 218), //W104
+      Offset(615, 232), //W105
+      Offset(624, 252), //W106
+      Offset(622, 260), //W107
       Offset(623, 262), //W201
-      Offset(626, 263), //W202
-      Offset(632, 265), //W203
       Offset(635, 266), //W301
-      Offset(649, 254), //57
+      Offset(650, 254), //57
       // Offset(651, 269), //24
       //Offset(656, 280), //23
       //Offset(636, 282), //20

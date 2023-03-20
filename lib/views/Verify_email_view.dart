@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:legsfree/constants/routes.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 
@@ -35,10 +36,12 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
           TextButton(
             onPressed: () async {
               await AuthService.firebase().logOut();
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                registerRoute,
-                (route) => false,
-              );
+              SchedulerBinding.instance.addPostFrameCallback((_) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  registerRoute,
+                  (route) => false,
+                );
+              });
             },
             child: const Text('Restart'),
           ),

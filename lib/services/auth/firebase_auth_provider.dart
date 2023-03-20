@@ -7,6 +7,8 @@ import 'package:legsfree/services/auth/auth_exceptions.dart';
 import 'package:firebase_auth/firebase_auth.dart'
     show FirebaseAuth, FirebaseAuthException;
 
+//concrete implementation of auth provider
+
 class FirebaseAuthProvider implements AuthProvider {
   @override
   Future<AuthUser> createUser(

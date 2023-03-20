@@ -1,11 +1,12 @@
 //This file translates database data into actual dart language that can be implemented
 
 import 'dart:async';
+//import 'dart:html';
 import 'dart:io';
 import 'dart:typed_data';
 //import 'dart:ui';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
@@ -16,10 +17,30 @@ import 'package:quiver/core.dart';
 class MainService {
   Database? _db; // stores database
   List<DatabaseRouteMap> _maps = []; //stores list of maps
+  List<DatabaseNodesWeights> _weights = []; //stores list of weights
+  List<DatabaseRoutePointsInBetween> _pointsInBetween =
+      []; //stores list of pointsInBetween
+  List<DatabaseNodes> _nodes = []; //stores list of nodes
+  //List<DatabaseUser> _user = []; //stores list of maps
 
 //creates a stream of a list of DtabaseRouteMap which would keep track of the changes in _maps in this case
   final _mapsStreamController =
       StreamController<List<DatabaseRouteMap>>.broadcast();
+  final _weightsStreamController =
+      StreamController<List<DatabaseNodesWeights>>.broadcast();
+  final _pointsInBetweenStreamController =
+      StreamController<List<DatabaseRoutePointsInBetween>>.broadcast();
+  final _nodesStreamController =
+      StreamController<List<DatabaseNodes>>.broadcast();
+  //final _userStreamController =
+  //  StreamController<List<DatabaseUser>>.broadcast();
+
+  Stream<List<DatabaseRouteMap>> get allMaps => _mapsStreamController.stream;
+  Stream<List<DatabaseNodes>> get allNodes => _nodesStreamController.stream;
+//make mainservice a singleton
+  static final MainService _shared = MainService._sharedInstance();
+  MainService._sharedInstance();
+  factory MainService() => _shared;
 
   Future<DatabaseUser> getOrCreateUser({required String theemail}) async {
     try {
@@ -43,6 +64,7 @@ class MainService {
 
 //deletes all nodes
   Future<int> deleteAllMaps() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
     final numberOfDeletions = await db.delete(routeMapTable);
 
@@ -55,6 +77,7 @@ class MainService {
 
 //get all the nodes
   Future<Iterable<DatabaseRouteMap>> getAllMaps() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
     final imageInfo = await db.query(routeMapTable);
 
@@ -64,6 +87,7 @@ class MainService {
 
 //deletes node using nodeId inserted
   Future<void> deleteMaps({required int theImageInfoId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locates database
 
 //this returns the number of deleted nodes which can only be 0 or 1
@@ -93,6 +117,7 @@ class MainService {
     required DatabaseRouteMap theImageInfo,
     required ImageInfo theImageInfoNew,
   }) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
 //make sure map exists
@@ -128,6 +153,7 @@ class MainService {
 
 //gets user from an email inserted
   Future<DatabaseRouteMap> getMaps({required int theImageInfoId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locate database and store it
 
     final results = await db.query(
@@ -159,6 +185,7 @@ class MainService {
 
 //create a new node
   Future<DatabaseRouteMap> createMaps(ImageInfo theImageInfo) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
     final resultlocation1 = await db.query(
@@ -234,15 +261,31 @@ class MainService {
     return map;
   }
 
+//stores database inside variable _maps
+  Future<void> _cacheNodesWeights() async {
+    final allWeights = await getAllNodesWeights(); //get all maps
+    _weights = allWeights
+        .toList(); //changes iterable to list (remember an underscore means the variable is private to this class and it has to be used somewhere else publically)
+    _weightsStreamController.add(_weights); //add it to stream
+  }
+
 //deletes all nodes
-  Future<int> deleteAllWeights() async {
+  Future<int> deleteAllNodesWeights() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
-    return await db.delete(nodesWeightsTable);
+    final numberOfNodesWeights = await db.delete(nodesWeightsTable);
+
+//delete maps from stream
+    _weights = [];
+    _weightsStreamController.add(_weights);
+
+    return numberOfNodesWeights;
   }
 
 //get all the nodes
-  Future<Iterable<DatabaseNodesWeights>> getAllWeights() async {
+  Future<Iterable<DatabaseNodesWeights>> getAllNodesWeights() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
     final nodesWeight = await db.query(nodesWeightsTable);
 
@@ -251,7 +294,8 @@ class MainService {
   }
 
 //deletes node using nodeId inserted
-  Future<void> deleteWeights({required int theNodesWeightId}) async {
+  Future<void> deleteNodesWeights({required int theNodesWeightId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locates database
 
 //this returns the number of deleted nodes which can only be 0 or 1
@@ -270,13 +314,18 @@ class MainService {
 //if deleted count was 0 and exception is thrown
     if (deletedCount != 1) {
       throw CouldNotDeleteNodesWeight();
+    } else {
+      //delete from stream and the list
+      _weights.removeWhere((weights) => weights.id == theNodesWeightId);
+      _weightsStreamController.add(_weights);
     }
   }
 
-  Future<DatabaseNodesWeights> updateWeights({
+  Future<DatabaseNodesWeights> updateNodesWeights({
     required DatabaseNodesWeights theNodesWeight,
     required NodesWeight theNodesWeightNewInfo,
   }) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
     await getNodesWeights(theNodesWeightsId: theNodesWeight.id);
@@ -294,13 +343,21 @@ class MainService {
     if (updateCount == 0) {
       throw CouldNotUpdateNode();
     } else {
-      return await getNodesWeights(theNodesWeightsId: theNodesWeight.id);
+      final updatedWeight = await getNodesWeights(
+          theNodesWeightsId: theNodesWeight.id); //get updated value
+      _weights.removeWhere(
+          (node) => node.id == updatedWeight.id); //remove from stream
+      _weights.add(updatedWeight); // update list with mew updated value
+      _weightsStreamController
+          .add(_weights); // update stream with new updated list
+      return updatedWeight;
     }
   }
 
 //gets user from an email inserted
   Future<DatabaseNodesWeights> getNodesWeights(
       {required int theNodesWeightsId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locate database and store it
 
     final results = await db.query(
@@ -314,7 +371,17 @@ class MainService {
 //if no results were returned throw an exception or return the node we are looking for
 //in the list created above
     if (results.isNotEmpty) {
-      return DatabaseNodesWeights.fromRow(results.first);
+      final weights = DatabaseNodesWeights.fromRow(results.first);
+
+      //remove existing map from stream with the same identity of our updated value
+      _weights.removeWhere((weights) => weights.id == theNodesWeightsId);
+
+      //after removing the old value we insert the new value into the local list cache and the stream
+      //NOTE: in this case we are only updating the stream so the value is not affected, but the rather it is like we are getting updating it's status
+      _weights.add(weights);
+      _weightsStreamController.add(_weights);
+
+      return weights;
     } else {
       throw CouldNotFindNodesWeight();
     }
@@ -323,6 +390,7 @@ class MainService {
 //create a new node
   Future<DatabaseNodesWeights> createNodesWeights(
       NodesWeight theWeights) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
     final resultX = await db.query(
@@ -371,24 +439,46 @@ class MainService {
       },
     );
 //return instance of database node using new nodeIdf
-    return DatabaseNodesWeights(
+    final node = DatabaseNodesWeights(
       id: weightId,
       node_1: theWeights.node1,
       node_2: theWeights.node1,
       weight: theWeights.weight,
       weightClass: theWeights.weightClass,
     );
+
+    //add new map to list of maps and update the streamcontroller
+    _weights.add(node);
+    _weightsStreamController.add(_weights);
+
+    return node;
+  }
+
+//stores database inside variable _maps
+  Future<void> _cachePointsInBetween() async {
+    final allPointsInbetween = await getAllPointsInBetween(); //get all maps
+    _pointsInBetween = allPointsInbetween
+        .toList(); //changes iterable to list (remember an underscore means the variable is private to this class and it has to be used somewhere else publically)
+    _pointsInBetweenStreamController.add(_pointsInBetween); //add it to stream
   }
 
 //deletes all nodes
   Future<int> deleteAllPointsInBetween() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
-    return await db.delete(routePointsInBetweenTable);
+    final numberOfPointsInBetween = await db.delete(routePointsInBetweenTable);
+
+    //delete maps from stream
+    _pointsInBetween = [];
+    _pointsInBetweenStreamController.add(_pointsInBetween);
+
+    return numberOfPointsInBetween;
   }
 
 //get all the nodes
   Future<Iterable<DatabaseRoutePointsInBetween>> getAllPointsInBetween() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
     final pointsInBetween = await db.query(routePointsInBetweenTable);
 
@@ -399,6 +489,7 @@ class MainService {
 //deletes node using nodeId inserted
   Future<void> deletePointsInBetween(
       {required int theRoutePointsInBetweenId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locates database
 
 //this returns the number of deleted nodes which can only be 0 or 1
@@ -417,6 +508,11 @@ class MainService {
 //if deleted count was 0 and exception is thrown
     if (deletedCount != 1) {
       throw CouldNotDeletePointsInBetween();
+    } else {
+      //delete from stream and the list
+      _pointsInBetween.removeWhere(
+          (pointsInbetween) => pointsInbetween.id == theRoutePointsInBetweenId);
+      _pointsInBetweenStreamController.add(_pointsInBetween);
     }
   }
 
@@ -424,6 +520,7 @@ class MainService {
     required DatabaseRoutePointsInBetween theRoutePointsInBetween,
     required PointsInBetween theRoutePointsInBetweenNewInfo,
   }) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
     await getPointsInBetween(
@@ -439,14 +536,23 @@ class MainService {
     if (updateCount == 0) {
       throw CouldNotUpdatePointsInBetween();
     } else {
-      return await getPointsInBetween(
-          theRoutePointsInBetweenId: theRoutePointsInBetween.id);
+      final updatedPointsInBetween = await getPointsInBetween(
+          theRoutePointsInBetweenId:
+              theRoutePointsInBetween.id); //get updated value
+      _pointsInBetween.removeWhere((pointsInBetween) =>
+          pointsInBetween.id == updatedPointsInBetween.id); //remove from stream
+      _pointsInBetween
+          .add(updatedPointsInBetween); // update list with mew updated value
+      _pointsInBetweenStreamController
+          .add(_pointsInBetween); // update stream with new updated list
+      return updatedPointsInBetween;
     }
   }
 
 //gets user from an email inserted
   Future<DatabaseRoutePointsInBetween> getPointsInBetween(
       {required int theRoutePointsInBetweenId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locate database and store it
 
     final results = await db.query(
@@ -459,8 +565,20 @@ class MainService {
     );
 //if no results were returned throw an exception or return the node we are looking for
 //in the list created above
-    if (results.isNotEmpty) {
-      return DatabaseRoutePointsInBetween.fromRow(results.first);
+    if ((results.isNotEmpty)) {
+      final getPointInBetween =
+          DatabaseRoutePointsInBetween.fromRow(results.first);
+
+      //remove existing map from stream with the same identity of our updated value
+      _pointsInBetween.removeWhere(
+          (pointsInBetween) => pointsInBetween.id == theRoutePointsInBetweenId);
+
+      //after removing the old value we insert the new value into the local list cache and the stream
+      //NOTE: in this case we are only updating the stream so the value is not affected, but the rather it is like we are getting updating it's status
+      _pointsInBetween.add(getPointInBetween);
+      _pointsInBetweenStreamController.add(_pointsInBetween);
+
+      return getPointInBetween;
     } else {
       throw CouldNotFindRoutePointsInBetween();
     }
@@ -469,6 +587,7 @@ class MainService {
 //create a new node
   Future<DatabaseRoutePointsInBetween> createPointsInBetween(
       PointsInBetween points) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
     final results = await db.query(
@@ -498,7 +617,7 @@ class MainService {
     );
 
 //return instance of database node using new nodeIdf
-    return DatabaseRoutePointsInBetween(
+    final pointsInBetween = DatabaseRoutePointsInBetween(
       id: pointsInBetweenId,
       location_1: points.location1,
       location_2: points.location2,
@@ -506,17 +625,39 @@ class MainService {
       routeId: points.routeId,
       position: points.position,
     );
+
+    //add new map to list of maps and update the streamcontroller
+    _pointsInBetween.add(pointsInBetween);
+    _pointsInBetweenStreamController.add(_pointsInBetween);
+
+    return pointsInBetween;
+  }
+
+//stores database inside variable _maps
+  Future<void> _cacheNodes() async {
+    final allNodes = await getAllNodes(); //get all maps
+    _nodes = allNodes
+        .toList(); //changes iterable to list (remember an underscore means the variable is private to this class and it has to be used somewhere else publically)
+    _nodesStreamController.add(_nodes); //add it to stream
   }
 
 //deletes all nodes
   Future<int> deleteAllNodes() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
-    return await db.delete(nodesTable);
+    final numberOfNodes = await db.delete(nodesTable);
+
+    //delete maps from stream
+    _nodes = [];
+    _nodesStreamController.add(_nodes);
+
+    return numberOfNodes;
   }
 
 //get all the nodes
   Future<Iterable<DatabaseNodes>> getAllNodes() async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
     final nodes = await db.query(nodesTable);
 
@@ -524,7 +665,8 @@ class MainService {
   }
 
 //deletes node using nodeId inserted
-  Future<void> deleteNode({required int nodeId}) async {
+  Future<void> deleteNode({required int theNodeId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locates database
 
 //this returns the number of deleted nodes which can only be 0 or 1
@@ -533,7 +675,7 @@ class MainService {
       where:
           'node_id = ?', //delete as long as it is under the column 'id' and is equal to some value
       whereArgs: [
-        nodeId
+        theNodeId
       ], //delete if its arguments are equal to that of the argument of this function
     );
 
@@ -543,35 +685,46 @@ class MainService {
 //if deleted count was 0 and exception is thrown
     if (deletedCount != 1) {
       throw CouldNotDeleteNode();
+    } else {
+      //delete from stream and the list
+      _nodes.removeWhere((nodes) => nodes.id == theNodeId);
+      _nodesStreamController.add(_nodes);
     }
   }
 
   Future<DatabaseNodes> updateNode({
-    required DatabaseNodes thenode,
-    required Coordinates thenodeNewInfo,
+    required DatabaseNodes theNode,
+    required Coordinates theNodeNewInfo,
   }) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
-    await getNode(theId: thenode.id);
+    await getNode(theId: theNode.id);
 
     final updateCount = await db.update(
       nodesTable,
       {
-        xColumn: thenode.x,
-        yColumn: thenode.y,
-        isSelectableColumn: thenode.isSelectable,
+        xColumn: theNode.x,
+        yColumn: theNode.y,
+        isSelectableColumn: theNode.isSelectable,
       },
     );
 
     if (updateCount == 0) {
       throw CouldNotUpdateNode();
     } else {
-      return await getNode(theId: thenode.id);
+      final updatedNode = await getNode(theId: theNode.id); //get updated value
+      _nodes
+          .removeWhere((map) => map.id == updatedNode.id); //remove from stream
+      _nodes.add(updatedNode); // update list with mew updated value
+      _nodesStreamController.add(_nodes); // update stream with new updated list
+      return updatedNode;
     }
   }
 
 //gets user from an email inserted
   Future<DatabaseNodes> getNode({required int theId}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locate database and store it
 
     final results = await db.query(
@@ -585,7 +738,17 @@ class MainService {
 //if no results were returned throw an exception or return the node we are looking for
 //in the list created above
     if (results.isNotEmpty) {
-      return DatabaseNodes.fromRow(results.first);
+      final getNode = DatabaseNodes.fromRow(results.first);
+
+      //remove existing map from stream with the same identity of our updated value
+      _nodes.removeWhere((node) => node.id == theId);
+
+      //after removing the old value we insert the new value into the local list cache and the stream
+      //NOTE: in this case we are only updating the stream so the value is not affected, but the rather it is like we are getting updating it's status
+      _nodes.add(getNode);
+      _nodesStreamController.add(_nodes);
+
+      return getNode;
     } else {
       throw CouldNotFindNode();
     }
@@ -593,6 +756,7 @@ class MainService {
 
 //create a new node
   Future<DatabaseNodes> createNode(Coordinates thenode) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
     final resultX = await db.query(
@@ -629,16 +793,23 @@ class MainService {
       },
     );
 //return instance of database node using new nodeIdf
-    return DatabaseNodes(
+    final nodes = DatabaseNodes(
       id: nodeId,
       x: thenode.x,
       y: thenode.y,
       isSelectable: thenode.isSelectable,
     );
+
+    //add new map to list of maps and update the streamcontroller
+    _nodes.add(nodes);
+    _nodesStreamController.add(_nodes);
+
+    return nodes;
   }
 
 //deletes user from an email inserted
   Future<void> deleteUser({required String theemail}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locates database
 
 //this returns the number of deleted users which can only be 0 or 1
@@ -662,6 +833,7 @@ class MainService {
 
 //gets user from an email inserted
   Future<DatabaseUser> getUser({required String theemail}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locate database and store it
 
 //ask if email exists and store the result as a list inside results
@@ -685,6 +857,7 @@ class MainService {
 
 //creates a user from an email inserted
   Future<DatabaseUser> createUser({required String theemail}) async {
+    await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locates database
 
     //asking if there is an email similar to the email we want to create
@@ -745,6 +918,14 @@ class MainService {
     }
   }
 
+  Future<void> _ensureDbIsOpen() async {
+    try {
+      await open();
+    } on DatabaseAlreadyOpenException {
+      //empty
+    }
+  }
+
 //opens database
   Future<void> open() async {
     //if database is open already then throw an exception
@@ -766,16 +947,16 @@ class MainService {
 
 //create nodes table ONLY if it does not exist and then execute it
       await db.execute(createNodesTable);
-
+      await _cacheNodes();
 //create routeMapsTable ONLY if it does not exist and then execute it
       await db.execute(createRouteMapsTable);
-
+      await _cacheMaps();
 //create weights table ONLY if it does not exist and then execute it
       await db.execute(createWeightsTable);
-
+      await _cacheNodesWeights();
       //create routePointsTable table ONLY if it does not exist and then execute it
       await db.execute(createRoutePointsInBetweenTable);
-      await _cacheMaps(); // stores database inside variable _maps
+      await _cachePointsInBetween(); // stores database inside variable _maps
     } on MissingPlatformDirectoryException {
       //if the MissingPlatformDirectory exception is thrown then our own exception is thrown
       throw UnableToGetDocumentException();

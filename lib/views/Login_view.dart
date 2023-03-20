@@ -1,5 +1,6 @@
 //import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:legsfree/services/auth/auth_exceptions.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 import 'package:legsfree/utilities/show_error_dialog.dart';
@@ -89,16 +90,20 @@ class _LoginViewState extends State<LoginView> {
                 final user = AuthService.firebase().currentUser;
                 if (user?.isEmailVerified ?? false) {
                   //user email verified
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    mainRoute,
-                    (route) => false,
-                  );
+                  SchedulerBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      mapsRoute,
+                      (route) => false,
+                    );
+                  });
                 } else {
                   //user email is not verified
-                  Navigator.of(context).pushNamedAndRemoveUntil(
-                    verifyEmailRoute,
-                    (route) => false,
-                  );
+                  SchedulerBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      verifyEmailRoute,
+                      (route) => false,
+                    );
+                  });
                 }
               } on UserNotFoundAuthException {
                 //if exception is user is not found display user not found

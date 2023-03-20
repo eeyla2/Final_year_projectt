@@ -47,6 +47,7 @@ dependencies:
   path_provider: ^2.0.13
   path: ^1.8.2
   quiver: ^3.2.1
+  flutter_spinkit: ^5.1.0
 
 dev_dependencies:
   flutter_test:

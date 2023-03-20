@@ -69,6 +69,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '962506045459',
     projectId: 'legsfree',
     storageBucket: 'legsfree.appspot.com',
+    androidClientId: '962506045459-rhrpf0mj9130q9hlthnfs5vhb68su2qb.apps.googleusercontent.com',
     iosClientId: '962506045459-hlnlmncess95ugrpffj72a5piin9fhv1.apps.googleusercontent.com',
     iosBundleId: 'com.legsfree.legsfree',
   );

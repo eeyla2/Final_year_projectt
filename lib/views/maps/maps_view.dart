@@ -1,20 +1,24 @@
 //mainview widget
 
 import 'dart:async';
-import 'dart:math';
+//import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:directed_graph/directed_graph.dart';
+//import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
+import 'package:legsfree/services/crud/main_services.dart';
 import 'dart:developer' as devtools show log;
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter/scheduler.dart';
 
-import '../constants/routes.dart';
-import '../enums/menu_action.dart';
-import '../main.dart';
+import '../../constants/routes.dart';
+import '../../enums/menu_action.dart';
+import '../../main.dart';
 
 class MainView extends StatefulWidget {
   const MainView({super.key});
@@ -29,6 +33,9 @@ class _MainViewState extends State<MainView> {
   final Connectivity connectivity = Connectivity();
   late StreamSubscription<ConnectivityResult> connectivitySubscription;
 
+//get the current signed in user email
+  late final MainService _mainService;
+  String get userEmail => AuthService.firebase().currentUser!.email!;
 //initialize variables
   final a = 'a';
   final b = 'b';
@@ -41,6 +48,9 @@ class _MainViewState extends State<MainView> {
   final i = 'i';
   final k = 'k';
   final l = 'l';
+
+//#######################get the nodes somewhere around here############################
+
   List<String> shortestPath = [];
 
 //initialize comparator variable
@@ -64,9 +74,14 @@ class _MainViewState extends State<MainView> {
 //override built-in function initState
   @override
   void initState() {
-    super.initState();
+    //open database
+
+    _mainService = MainService();
+    _mainService.open();
 
     initLocationServices();
+
+    //#############get the nodes and weights in certain order somewhere around here##############################
     //have to have it's own class
     graph = WeightedDirectedGraph<String, int>(
       {
@@ -86,7 +101,9 @@ class _MainViewState extends State<MainView> {
     );
 
 //calculate shortest path
-    shortestPath = graph.shortestPath(d, l);
+    shortestPath = graph.lightestPath(d, l);
+
+    //######################store lightest path intended####################
 
 //connectivity
     connectivitySubscription =
@@ -94,11 +111,13 @@ class _MainViewState extends State<MainView> {
     devtools.log(
       'Connection Status: ${connectionStatus.toString()}',
     );
+    super.initState();
   }
 
   @override
   void dispose() {
     connectivitySubscription.cancel();
+    _mainService.close();
     super.dispose();
   }
 
@@ -138,6 +157,10 @@ class _MainViewState extends State<MainView> {
         title: const Text(
             'Main Page'), // have to change it so that it is at the bottom and has gadgets
         actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.route_outlined),
+          ),
           PopupMenuButton<MenuAction>(
             onSelected: (value) async {
               switch (value) {
@@ -145,10 +168,13 @@ class _MainViewState extends State<MainView> {
                   final shouldLogout = await showLogOutDialog(context);
                   if (shouldLogout) {
                     await AuthService.firebase().logOut();
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      loginRoute,
-                      (_) => false,
-                    );
+                    // Wrap Navigator with SchedulerBinding to wait for rendering state before navigating
+                    SchedulerBinding.instance.addPostFrameCallback((_) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        loginRoute,
+                        (_) => false,
+                      );
+                    });
                   }
               }
             },
@@ -163,32 +189,54 @@ class _MainViewState extends State<MainView> {
           )
         ],
       ),
-      body: SingleChildScrollView(
-        //scroll widget
-        child: Column(
-          children: [
-            Stack(
-              //fit: StackFit.expand,
-              //stack widgets on top of each other
-              children: <Widget>[
-                Image.asset(
-                  //loads an image on to the app
-                  'images/map.png',
-                ),
-                SizedBox(
-                  //a box of dimensions 400x400 and an x-y scale of 200 starting from the top left and going downwards and right
-                  width: 400,
-                  height: 400,
-                  child: CustomPaint(
-                    //paint
-                    painter: LocationCircles(),
-                  ),
-                ),
-                //buildFloatingSearchBar(context),
-              ],
-            ),
-          ],
-        ),
+      body: FutureBuilder(
+        future: _mainService.getOrCreateUser(theemail: userEmail),
+        builder: (context, snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.done:
+              return StreamBuilder(
+                stream: _mainService.allNodes,
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.waiting:
+                      return spinkit2;
+                    default:
+                      return SingleChildScrollView(
+                        //scroll widget
+                        child: Column(
+                          children: [
+                            Stack(
+                              //fit: StackFit.expand,
+                              //stack widgets on top of each other
+                              children: <Widget>[
+                                Image.asset(
+                                  //loads an image on to the app
+                                  'images/map.png',
+                                ),
+                                const SizedBox(child: Text('no route')),
+                                // SizedBox(
+                                //a box of dimensions 400x400 and an x-y scale of 200 starting from the top left and going downwards and right
+                                //  width: 400,
+                                // height: 400,
+                                // child: CustomPaint(
+                                //paint
+                                //   painter: LocationCircles(),
+                                //),
+                                //),
+                                //buildFloatingSearchBar(context),
+                              ],
+                            ),
+                          ], //children
+                        ),
+                      );
+                  }
+                },
+              );
+
+            default:
+              return spinkit1;
+          }
+        },
       ),
     );
   }
@@ -219,6 +267,16 @@ class _MainViewState extends State<MainView> {
 //],
 //builder: (BuildContext context, Animation<double> transition) {  },);
 //}
+
+const spinkit1 = SpinKitSpinningLines(
+  color: Colors.black,
+  size: 50.0,
+);
+
+const spinkit2 = SpinKitSpinningLines(
+  color: Colors.blue,
+  size: 50.0,
+);
 
 Widget buildFloatingSearchBar(BuildContext context) {
   final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
