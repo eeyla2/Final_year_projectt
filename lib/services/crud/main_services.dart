@@ -328,7 +328,7 @@ class MainService {
     await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
-    await getNodesWeights(theNodesWeightsId: theNodesWeight.id);
+    await getNodesWeightsUseId(theNodesWeightsId: theNodesWeight.id);
 
     final updateCount = await db.update(
       nodesWeightsTable,
@@ -343,7 +343,7 @@ class MainService {
     if (updateCount == 0) {
       throw CouldNotUpdateNode();
     } else {
-      final updatedWeight = await getNodesWeights(
+      final updatedWeight = await getNodesWeightsUseId(
           theNodesWeightsId: theNodesWeight.id); //get updated value
       _weights.removeWhere(
           (node) => node.id == updatedWeight.id); //remove from stream
@@ -355,7 +355,7 @@ class MainService {
   }
 
 //gets user from an email inserted
-  Future<DatabaseNodesWeights> getNodesWeights(
+  Future<DatabaseNodesWeights> getNodesWeightsUseId(
       {required int theNodesWeightsId}) async {
     await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locate database and store it
@@ -381,6 +381,43 @@ class MainService {
       _weights.add(weights);
       _weightsStreamController.add(_weights);
 
+      return weights;
+    } else {
+      throw CouldNotFindNodesWeight();
+    }
+  }
+
+//gets user from an email inserted
+  Future<List<DatabaseNodesWeights>> getNodesWeightsUseNode(
+      {required String theNodesName, required int theNodesWeightId}) async {
+    await _ensureDbIsOpen();
+    final db = _getDatabaseOrThrow(); //locate database and store it
+
+    final results = await db.query(
+      nodesWeightsTable, //choose nodes table
+      where: 'node_1 = ?', // we are looking for x and y
+      whereArgs: [
+        theNodesName,
+      ], //the x and y we are looking for has the same content as our argument
+    );
+//if no results were returned throw an exception or return the node we are looking for
+//in the list created above
+    if (results.isNotEmpty) {
+      late List<DatabaseNodesWeights> weights = [];
+
+      for (int i = 0; i < results.length; ++i) {
+        weights[i] = DatabaseNodesWeights.fromRow(results[i]);
+
+        //remove existing map from stream with the same identity of our updated value
+        _weights.removeWhere((weights) =>
+            weights.id ==
+            theNodesWeightId); //////////////Not 100% correct//////////////////////
+
+        //after removing the old value we insert the new value into the local list cache and the stream
+        //NOTE: in this case we are only updating the stream so the value is not affected, rather it is like we are getting updates of its status
+        _weights.add(weights[i]);
+        _weightsStreamController.add(_weights);
+      }
       return weights;
     } else {
       throw CouldNotFindNodesWeight();
@@ -649,8 +686,8 @@ class MainService {
     final numberOfNodes = await db.delete(nodesTable);
 
     //delete maps from stream
-    _nodes = [];
-    _nodesStreamController.add(_nodes);
+    //  _nodes = [];
+    // _nodesStreamController.add(_nodes);
 
     return numberOfNodes;
   }
@@ -687,8 +724,8 @@ class MainService {
       throw CouldNotDeleteNode();
     } else {
       //delete from stream and the list
-      _nodes.removeWhere((nodes) => nodes.id == theNodeId);
-      _nodesStreamController.add(_nodes);
+      // _nodes.removeWhere((nodes) => nodes.id == theNodeId);
+      //_nodesStreamController.add(_nodes);
     }
   }
 
@@ -699,7 +736,7 @@ class MainService {
     await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
-    await getNode(theId: theNode.id);
+    await getNodeUseNodeId(theNodeId: theNode.id);
 
     final updateCount = await db.update(
       nodesTable,
@@ -713,26 +750,59 @@ class MainService {
     if (updateCount == 0) {
       throw CouldNotUpdateNode();
     } else {
-      final updatedNode = await getNode(theId: theNode.id); //get updated value
-      _nodes
-          .removeWhere((map) => map.id == updatedNode.id); //remove from stream
-      _nodes.add(updatedNode); // update list with mew updated value
-      _nodesStreamController.add(_nodes); // update stream with new updated list
+      final updatedNode =
+          await getNodeUseNodeId(theNodeId: theNode.id); //get updated value
+      // _nodes.removeWhere((map) => map.id == updatedNode.id); //remove from stream
+      //_nodes.add(updatedNode); // update list with mew updated value
+      //_nodesStreamController.add(_nodes); // update stream with new updated list
       return updatedNode;
     }
   }
 
 //gets user from an email inserted
-  Future<DatabaseNodes> getNode({required int theId}) async {
+  Future<List<DatabaseNodes>> getNodeUseNodeName(
+      {required String theNodeName}) async {
     await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow(); //locate database and store it
 
     final results = await db.query(
       nodesTable, //choose nodes table
-      limit: 1, //only look for one node
+      where: 'node_name = ?', // we are looking for x and y
+      whereArgs: [
+        theNodeName,
+      ], //the x and y we are looking for has the same content as our argument
+    );
+//if no results were returned throw an exception or return the node we are looking for
+//in the list created above
+    if (results.isNotEmpty) {
+      late List<DatabaseNodes> nodes = [];
+      for (int i = 0; i < results.length; ++i) {
+        final nodes = DatabaseNodes.fromRow(results[i]);
+
+        //remove existing map from stream with the same identity of our updated value
+        //_nodes.removeWhere((nodes) => nodes.id == theNodeName);
+
+        //after removing the old value we insert the new value into the local list cache and the stream
+        //NOTE: in this case we are only updating the stream so the value is not affected, but the rather it is like we are getting updating it's status
+        //_nodes.add(nodes);
+        //_nodesStreamController.add(_nodes);
+      }
+      return nodes;
+    } else {
+      throw CouldNotFindNode();
+    }
+  }
+
+//gets user from an email inserted
+  Future<DatabaseNodes> getNodeUseNodeId({required int theNodeId}) async {
+    await _ensureDbIsOpen();
+    final db = _getDatabaseOrThrow(); //locate database and store it
+
+    final results = await db.query(
+      nodesTable, //choose nodes table
       where: 'node_Id = ?', // we are looking for x and y
       whereArgs: [
-        theId,
+        theNodeId,
       ], //the x and y we are looking for has the same content as our argument
     );
 //if no results were returned throw an exception or return the node we are looking for
@@ -741,12 +811,12 @@ class MainService {
       final getNode = DatabaseNodes.fromRow(results.first);
 
       //remove existing map from stream with the same identity of our updated value
-      _nodes.removeWhere((node) => node.id == theId);
+      // _nodes.removeWhere((node) => node.id == theNodeId);
 
       //after removing the old value we insert the new value into the local list cache and the stream
       //NOTE: in this case we are only updating the stream so the value is not affected, but the rather it is like we are getting updating it's status
-      _nodes.add(getNode);
-      _nodesStreamController.add(_nodes);
+      // _nodes.add(getNode);
+      // _nodesStreamController.add(_nodes);
 
       return getNode;
     } else {
@@ -755,7 +825,7 @@ class MainService {
   }
 
 //create a new node
-  Future<DatabaseNodes> createNode(Coordinates thenode) async {
+  Future<DatabaseNodes> createNode(Coordinates theNode) async {
     await _ensureDbIsOpen();
     final db = _getDatabaseOrThrow();
 
@@ -764,7 +834,7 @@ class MainService {
       limit: 1, //in this case for only 1 item
       where: 'x = ?', //in this case we are looking for an x
       whereArgs: [
-        thenode.x
+        theNode.x
       ], //the x we are looking for is that similar to the argument's x variable
     );
 
@@ -773,7 +843,7 @@ class MainService {
       limit: 1, //in this case for only 1 item
       where: 'y = ?', //in this case we are looking for a y
       whereArgs: [
-        thenode.y
+        theNode.y
       ], //the y we are looking for is that similar to the argument y variable
     );
 
@@ -787,22 +857,24 @@ class MainService {
     final nodeId = await db.insert(
       nodesTable,
       {
-        xColumn: thenode.x,
-        yColumn: thenode.y,
-        isSelectableColumn: thenode.isSelectable,
+        xColumn: theNode.x,
+        yColumn: theNode.y,
+        isSelectableColumn: theNode.isSelectable,
+        nodeNameColumn: theNode.nodeName,
       },
     );
 //return instance of database node using new nodeIdf
     final nodes = DatabaseNodes(
       id: nodeId,
-      x: thenode.x,
-      y: thenode.y,
-      isSelectable: thenode.isSelectable,
+      x: theNode.x,
+      y: theNode.y,
+      isSelectable: theNode.isSelectable,
+      nodeName: theNode.nodeName,
     );
 
     //add new map to list of maps and update the streamcontroller
-    _nodes.add(nodes);
-    _nodesStreamController.add(_nodes);
+    // _nodes.add(nodes);
+    // _nodesStreamController.add(_nodes);
 
     return nodes;
   }
@@ -996,6 +1068,7 @@ class DatabaseNodes {
   final int x;
   final int y;
   final int isSelectable;
+  final String nodeName;
 
 //constructor
   DatabaseNodes({
@@ -1003,17 +1076,19 @@ class DatabaseNodes {
     required this.x,
     required this.y,
     required this.isSelectable,
+    required this.nodeName,
   });
 
   DatabaseNodes.fromRow(Map<String, Object?> map)
       : id = map[nodesIdColumn] as int,
         x = map[xColumn] as int,
         y = map[yColumn] as int,
-        isSelectable = map[isSelectableColumn] as int;
+        isSelectable = map[isSelectableColumn] as int,
+        nodeName = map[nodeNameColumn] as String;
 
   @override
   String toString() =>
-      'Nodes , ID = $id, x-coordinate = $x, y-coordinate = $y, Is it selectable = $isSelectable';
+      'Nodes , ID = $id, x-coordinate = $x, y-coordinate = $y, Is it selectable = $isSelectable, node name = $nodeName';
 
   @override
   bool operator ==(covariant DatabaseUser other) => id == other.id;
@@ -1074,8 +1149,8 @@ class DatabaseRouteMap {
 class DatabaseNodesWeights {
   //variables
   final int id;
-  final int node_1;
-  final int node_2;
+  final String node_1;
+  final String node_2;
   final int weight;
   final int weightClass;
 
@@ -1090,8 +1165,8 @@ class DatabaseNodesWeights {
 
   DatabaseNodesWeights.fromRow(Map<String, Object?> map)
       : id = map[weightsIdColumn] as int,
-        node_1 = map[xColumn] as int,
-        node_2 = map[yColumn] as int,
+        node_1 = map[xColumn] as String,
+        node_2 = map[yColumn] as String,
         weight = map[weightColumn] as int,
         weightClass = map[weightClassWeightsColumn] as int;
 
@@ -1147,11 +1222,17 @@ class DatabaseRoutePointsInBetween {
 //stores x and y coordinates
 class Coordinates {
   final int x, y, isSelectable;
+  final String nodeName;
 
-  Coordinates({required this.x, required this.y, required this.isSelectable});
+  Coordinates(
+      {required this.x,
+      required this.y,
+      required this.isSelectable,
+      required this.nodeName});
 
   @override
-  String toString() => 'coordinates, x = $x, y = $y';
+  String toString() =>
+      'coordinates, x = $x, y = $y,  Is it selectable = $isSelectable, node name= $nodeName';
 
 //comparing coordinates #### MIGHT HAVE TO CHANGE LOCATION #####
   @override
@@ -1195,8 +1276,8 @@ class PointsInBetween {
 }
 
 class NodesWeight {
-  final int node1;
-  final int node2;
+  final String node1;
+  final String node2;
   final int weight;
   final int weightClass;
 
@@ -1270,6 +1351,7 @@ const nodesIdColumn = 'node_id';
 const xColumn = 'x';
 const yColumn = 'y';
 const isSelectableColumn = 'isSelectable';
+const nodeNameColumn = 'node_name';
 const routeMapIdColumn = 'route_map_id';
 const mapFileNameColumn = 'map_name';
 const mapsColumn = 'maps';
@@ -1301,6 +1383,7 @@ const createNodesTable = '''CREATE TABLE IF NOT EXISTS "nodes" (
 	"x"	INTEGER NOT NULL,
 	"y"	INTEGER NOT NULL,
   "isSelectable"	INTEGER NOT NULL,
+  "node_name"	TEXT NOT NULL,
 	PRIMARY KEY("node_id" AUTOINCREMENT)
 );''';
 
@@ -1318,8 +1401,8 @@ const createRouteMapsTable = '''CREATE TABLE IF NOT EXISTS "route_map" (
 );''';
 
 const createWeightsTable = '''CREATE TABLE IF NOT EXISTS "weights" (
-	"node_1"	INTEGER NOT NULL,
-	"node_2"	INTEGER NOT NULL,
+	"node_1"	TEXT NOT NULL,
+	"node_2"	TEXT NOT NULL,
 	"weight"	INTEGER NOT NULL,
 	"weights_id"	INTEGER NOT NULL,
   "weight_class"	INTEGER NOT NULL,

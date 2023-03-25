@@ -1,15 +1,14 @@
 //import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'dart:async';
 //import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:legsfree/error_handling/error_handler.dart';
+//import 'package:legsfree/error_handling/error_handler.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 import 'package:legsfree/views/maps/maps_view.dart';
 import 'package:legsfree/views/maps/new_maps_view.dart';
 import 'package:location/location.dart';
-import 'package:flutter/foundation.dart';
+//import 'package:flutter/foundation.dart';
 //import 'package:legsfree/firebase_options.dart';
 import 'package:legsfree/views/login_view.dart';
 import 'package:legsfree/views/register_view.dart';
@@ -88,7 +87,8 @@ class HomePage extends StatelessWidget {
             if (user != null) {
               if (user.isEmailVerified) {
                 //if user has been entered and email is verified return mainview
-                return const MainView();
+                return const NewMapsView();
+                //MainView();
               } else {
                 //if not show the verifyemailview page
                 return const VerifyEmailView();
@@ -158,48 +158,6 @@ Future<bool> showLogOutDialog(BuildContext context) {
     },
   ).then(
       (value) => value ?? false); //incase you want to cancel the whole process
-}
-
-//draws circles and lines
-class LocationCircles extends CustomPainter {
-  //override the paint function with the data and functions to paint
-  @override
-  void paint(Canvas canvas, Size size) {
-    const pointMode = ui.PointMode.polygon; // drawing as a polygon
-    const points = [
-      //the points the line will draw in between
-      Offset(650, 180), //22
-      Offset(645, 171), //Y101
-      Offset(633, 156), //Y102
-      Offset(635, 170), //W101
-      Offset(626, 192), //W102
-      Offset(614, 202), //W103
-      Offset(607, 218), //W104
-      Offset(615, 232), //W105
-      Offset(624, 252), //W106
-      Offset(622, 260), //W107
-      Offset(623, 262), //W201
-      Offset(635, 266), //W301
-      Offset(650, 254), //57
-      // Offset(651, 269), //24
-      //Offset(656, 280), //23
-      //Offset(636, 282), //20
-      //Offset(596, 280), //56
-      //Offset(531, 272), //M
-      //Offset(559, 152), //L
-      //Offset(575, 163), //19
-      //Offset(575, 246), //18
-      //Offset(533, 326), //16
-    ];
-    var paint1 = Paint()
-      ..color = const Color.fromARGB(255, 107, 14, 14)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(533, 326), 6, paint1); //draw circle
-    canvas.drawPoints(pointMode, points, paint1); // draw line between points
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 //finding location

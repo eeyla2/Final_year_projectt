@@ -5,7 +5,6 @@ import 'dart:async';
 
 //import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:directed_graph/directed_graph.dart';
 //import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,40 +35,6 @@ class _MainViewState extends State<MainView> {
 //get the current signed in user email
   late final MainService _mainService;
   String get userEmail => AuthService.firebase().currentUser!.email!;
-//initialize variables
-  final a = 'a';
-  final b = 'b';
-  final c = 'c';
-  final d = 'd';
-  final e = 'e';
-  final f = 'f';
-  final g = 'g';
-  final h = 'h';
-  final i = 'i';
-  final k = 'k';
-  final l = 'l';
-
-//#######################get the nodes somewhere around here############################
-
-  List<String> shortestPath = [];
-
-//initialize comparator variable
-  int comparator(
-    String s1,
-    String s2,
-  ) {
-    return s1.compareTo(s2);
-  }
-
-//initialize sum variable
-  int sum(int left, int right) => left + right;
-
-  var graph = WeightedDirectedGraph<String, int>(
-    {},
-    summation: (int a, int b) => a + b,
-    zero: 0,
-    comparator: (String a, String b) => a.compareTo(b),
-  );
 
 //override built-in function initState
   @override
@@ -79,31 +44,8 @@ class _MainViewState extends State<MainView> {
     _mainService = MainService();
     _mainService.open();
 
+//initialize location services
     initLocationServices();
-
-    //#############get the nodes and weights in certain order somewhere around here##############################
-    //have to have it's own class
-    graph = WeightedDirectedGraph<String, int>(
-      {
-        a: {b: 1, h: 7, c: 2, e: 40, g: 7},
-        b: {h: 6},
-        c: {h: 5, g: 4},
-        d: {e: 1, f: 2},
-        e: {g: 2},
-        f: {i: 3},
-        i: {l: 3, k: 2},
-        k: {g: 4, f: 5},
-        l: {l: 0},
-      },
-      summation: sum,
-      zero: 0,
-      comparator: comparator,
-    );
-
-//calculate shortest path
-    shortestPath = graph.lightestPath(d, l);
-
-    //######################store lightest path intended####################
 
 //connectivity
     connectivitySubscription =
@@ -199,6 +141,7 @@ class _MainViewState extends State<MainView> {
                 builder: (context, snapshot) {
                   switch (snapshot.connectionState) {
                     case ConnectionState.waiting:
+                    case ConnectionState.active:
                       return spinkit2;
                     default:
                       return SingleChildScrollView(
