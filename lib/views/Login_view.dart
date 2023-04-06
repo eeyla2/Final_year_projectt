@@ -90,13 +90,13 @@ class _LoginViewState extends State<LoginView> {
                 final user = AuthService.firebase().currentUser;
                 if (user?.isEmailVerified ?? false) {
                   //user email verified
-                  SchedulerBinding.instance.addPostFrameCallback((_) {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      newMapsRoute,
-                      //mapsRoute,
-                      (route) => false,
-                    );
-                  });
+                  //SchedulerBinding.instance.addPostFrameCallback((_) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    newMapsRoute,
+                    //mapsRoute,
+                    (route) => false,
+                  );
+                  //});
                 } else {
                   //user email is not verified
                   SchedulerBinding.instance.addPostFrameCallback((_) {

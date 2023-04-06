@@ -23,18 +23,6 @@ import 'dart:developer' as devtools show log;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-//MyErrorsHandler
-/*
-  await MyErrorsHandler.initialize();
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    MyErrorsHandler.onErrorDetails(details);
-  };
-  PlatformDispatcher.instance.onError = (error, stack) {
-    MyErrorsHandler.onError(error, stack);
-    return true;
-  };
-  */
   runApp(
     //place MaterialApp in here for effeciency instead of using MyApp widget
     MaterialApp(
@@ -43,19 +31,7 @@ Future<void> main() async {
           primarySwatch: Colors.blue,
         ),
         home: const HomePage(),
-/*
-        //To define a customized error widget that displays whenever the builder fails to build a widget
-        builder: (context, widget) {
-          Widget error = const Text('...rendering error...');
-          if (widget is Scaffold || widget is Navigator) {
-            error = Scaffold(body: Center(child: error));
-          }
 
-          ErrorWidget.builder = (errorDetails) => error;
-          if (widget != null) return widget;
-          throw ('widget is null');
-        },
-*/
         //HomePage(),
         routes: {
           //mapping different routes
@@ -87,8 +63,8 @@ class HomePage extends StatelessWidget {
             if (user != null) {
               if (user.isEmailVerified) {
                 //if user has been entered and email is verified return mainview
-                return const NewMapsView();
-                //MainView();
+                return const //MainView();
+                    NewMapsView();
               } else {
                 //if not show the verifyemailview page
                 return const VerifyEmailView();

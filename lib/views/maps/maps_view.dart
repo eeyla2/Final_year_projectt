@@ -142,36 +142,22 @@ class _MainViewState extends State<MainView> {
                   switch (snapshot.connectionState) {
                     case ConnectionState.waiting:
                     case ConnectionState.active:
-                      return spinkit2;
-                    default:
                       return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
                         //scroll widget
-                        child: Column(
-                          children: [
-                            Stack(
-                              //fit: StackFit.expand,
-                              //stack widgets on top of each other
-                              children: <Widget>[
-                                Image.asset(
-                                  //loads an image on to the app
-                                  'images/map.png',
+                        child:  SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height * 1,
+                                  child: Image.asset(
+                                    //loads an image on to the app
+                                    'images/map.png',
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
-                                const SizedBox(child: Text('no route')),
-                                // SizedBox(
-                                //a box of dimensions 400x400 and an x-y scale of 200 starting from the top left and going downwards and right
-                                //  width: 400,
-                                // height: 400,
-                                // child: CustomPaint(
-                                //paint
-                                //   painter: LocationCircles(),
-                                //),
-                                //),
-                                //buildFloatingSearchBar(context),
-                              ],
-                            ),
-                          ], //children
-                        ),
                       );
+
+                    default:
+                      return spinkit2;
                   }
                 },
               );

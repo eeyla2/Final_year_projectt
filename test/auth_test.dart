@@ -21,7 +21,7 @@ void main() {
     });
 
     test('User should be null after initialization', () {
-      expect(provider.isInitialized, null);
+      expect(provider.currentUser, null);
     });
 
     test(
@@ -34,8 +34,10 @@ void main() {
     );
 
     test('Create user should delegate to logIn function', () async {
-      final badEmailUser =
-          provider.createUser(email: 'foo@bar', password: 'anypassword');
+      final badEmailUser = provider.createUser(
+        email: 'foo@bar.com',
+        password: 'anypassword',
+      );
 
       expect(
         badEmailUser,
@@ -76,6 +78,7 @@ void main() {
 
 class NotInitializedException implements Exception {}
 
+//pretends to be an Auth provider for testing
 class MockAuthProvider implements AuthProvider {
   AuthUser? _user;
   var _isInitialized = false;
@@ -122,6 +125,7 @@ class MockAuthProvider implements AuthProvider {
     await Future.delayed(
       const Duration(seconds: 1),
     );
+    _user = null;
   }
 
   @override

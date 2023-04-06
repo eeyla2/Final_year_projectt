@@ -13,6 +13,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' show join;
 import 'crud_exceptions.dart';
 import 'package:quiver/core.dart';
+//import 'dart:js';
+//import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
+//import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+//import 'package:sqflite/sqflite.dart';
+//import 'package:path_provider/path_provider.dart';
 
 class MainService {
   Database? _db; // stores database
@@ -1006,6 +1011,8 @@ class MainService {
     }
 //try to open database and create tables
     try {
+      // Use the ffi web factory in web apps (flutter or dart)
+
       //this already throws an exception if it were unable to get a directory
       final docsPath = await getApplicationDocumentsDirectory(); //get real path
       final dbPath = join(docsPath.path,
@@ -1019,16 +1026,16 @@ class MainService {
 
 //create nodes table ONLY if it does not exist and then execute it
       await db.execute(createNodesTable);
-      await _cacheNodes();
+      //await _cacheNodes();
 //create routeMapsTable ONLY if it does not exist and then execute it
       await db.execute(createRouteMapsTable);
-      await _cacheMaps();
+      //await _cacheMaps();
 //create weights table ONLY if it does not exist and then execute it
       await db.execute(createWeightsTable);
-      await _cacheNodesWeights();
+      // await _cacheNodesWeights();
       //create routePointsTable table ONLY if it does not exist and then execute it
       await db.execute(createRoutePointsInBetweenTable);
-      await _cachePointsInBetween(); // stores database inside variable _maps
+      //await _cachePointsInBetween(); // stores database inside variable _maps
     } on MissingPlatformDirectoryException {
       //if the MissingPlatformDirectory exception is thrown then our own exception is thrown
       throw UnableToGetDocumentException();
@@ -1339,7 +1346,8 @@ class ImageInfo {
       hash3(location1.hashCode, location2.hashCode, totalWeight);
 }
 
-const dbName = 'legsfree.db';
+const dbName = 'maps.db';
+//const dbName = 'wrongdatabase';
 const userTable = 'user';
 const nodesTable = 'nodes';
 const routeMapTable = 'route_map';

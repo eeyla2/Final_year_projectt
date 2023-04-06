@@ -1,7 +1,14 @@
 import 'dart:ui' as ui;
 
-import '../../services/crud/main_services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:directed_graph/directed_graph.dart';
+import 'package:legsfree/models/nodes_model.dart';
+import 'package:legsfree/models/route_map.dart';
+import 'package:legsfree/models/route_points.dart';
+import 'package:legsfree/models/weights.dart';
+import 'package:legsfree/services/crud/main_services.dart';
+import 'package:legsfree/services/local%20db%20helper/local_db_helper.dart';
+
 import 'package:flutter/material.dart';
 import 'dart:developer' as devtools show log;
 import 'dart:async';
@@ -14,40 +21,23 @@ class NewMapsView extends StatefulWidget {
 }
 
 class _NewMapsViewState extends State<NewMapsView> {
-  DatabaseNodes? _initNode;
-  late final MainService _mainService;
-
-//gets all data from database
-  Future<List<DatabaseNodesWeights>> getNodesWeightsAsList() async {
-    final nodes = await _mainService.getAllNodesWeights();
-
-    return nodes.toList();
+  List<NodesModel> allNodes = [];
+  List<WeightsModel> nodesWeights = [];
+  //LOCAL DB HELPER
+  final LocalDBhelper _localDBhelper = LocalDBhelper();
+  //GETTING ALL NODES
+  getAllNodes() async {
+    allNodes = await _localDBhelper.getNodes();
+    print('Total nodes ${allNodes.length}');
   }
 
-  //gets all data from database
-  Future<List<DatabaseNodes>> getNodesAsList() async {
-    final nodes = await _mainService.getAllNodes();
-
-    List<DatabaseNodes> asList = [];
-    for (int i = 0; i < nodes.length; ++i) {
-      asList = nodes.toList();
-      devtools.log(asList[i].toString());
-    }
-    return asList;
+  // GETTING ALL NODES WEIGHTS
+  getAllNodesWeights() async {
+    nodesWeights = await _localDBhelper.getWeights();
+    print('Total nodes weights = ${nodesWeights.length}');
   }
 
-//#######################get the nodes somewhere around here############################
-  List<String> lightestPath = [];
-
-//initialize comparator variable
-  int comparator(
-    String s1,
-    String s2,
-  ) {
-    return s1.compareTo(s2);
-  }
-
-//initialize sum variable
+  //initialize sum variable
   int sum(int left, int right) => left + right;
 
   var graph = WeightedDirectedGraph<String, int>(
@@ -57,52 +47,67 @@ class _NewMapsViewState extends State<NewMapsView> {
     comparator: (String a, String b) => a.compareTo(b),
   );
 
-  List<DatabaseNodesWeights> nodesWeights = [];
+//#######################get the nodes somewhere around here############################
 
-  List<DatabaseNodes> nodesAllInfo = [];
+  bool isLoading = true;
+  List<String> listOfPointsinBetween = []; //it will have the result
 
-//initializing
-  void initialize(List<String> listOfPointsInBetween) async {
-    nodesWeights = await getNodesWeightsAsList();
-
-    for (int i = 0; i < nodesWeights.length; ++i) {
-      devtools.log(nodesWeights[i].node_1);
-    }
-    List<DatabaseNodes> nodesAllInfo = await getNodesAsList();
-
-//make sure all the nodes have been extracted
-    for (int j = 0; j < nodesAllInfo.length; ++j) {
-      for (int i = 0; i < nodesWeights.length; ++i) {
-        nodesWeights[i].toString();
-
-        List<DatabaseNodesWeights> specificNodeConnections =
-            await _mainService.getNodesWeightsUseNode(
-                theNodesName: nodesAllInfo[j].nodeName,
-                theNodesWeightId: nodesAllInfo[j].id);
-
-        graph.addEdge(
-            specificNodeConnections[i].node_1,
-            specificNodeConnections[i].node_2,
-            specificNodeConnections[i].weight);
-      }
-    }
-
-//calculate shortest path
-    listOfPointsInBetween =
-        graph.lightestPath('Physics Building', 'Student Services');
+//initialize comparator variable
+  int comparator(
+    String s1,
+    String s2,
+  ) {
+    return s1.compareTo(s2);
   }
 
-  var attempt2 = [];
+//INITIALIZING GRAPH
+
+  Future<List<String>> initializeGraph() async {
+    //List<WeightsModel> specificNodeConnections = [];
+//make sure all the nodes have been extracted
+    for (int j = 0; j < allNodes.length; ++j) {
+      List<WeightsModel> weights =
+          await _localDBhelper.getNodesWeightsForOneNode(allNodes[j].name!);
+      for (int i = 0; i < weights.length; ++i) {
+        //     // nodesWeights[i].toString();
+        // print('')
+        // specificNodeConnections.add(weights[i]);
+        graph.addEdge(
+          weights[i].node1!,
+          weights[i].node2!,
+          weights[i].weight!,
+        );
+      }
+    }
+    // specificNodeConnections = await _localDBhelper
+    //     .getNodesWeightsForOneNode('Right of Cripps Hill-four');
+    //print('SPECIFY NODES ${specificNodeConnections.length}');
+
+//calculate List of path in between
+    // List<String> listOfPointsInBetween = graph.lightestPath(
+    //     specificNodeConnections[0].node1!, specificNodeConnections[0].node2!);
+
+    List<String> listOfPointsInBetween =
+        graph.lightestPath('Physics Building', 'Student Services');
+    devtools.log('LIST OF POINTS ${listOfPointsInBetween}');
+
+    graph.data.forEach((key, value) {
+      devtools.log('$key and $value');
+    });
+    return listOfPointsInBetween;
+  }
 
 //override built-in function initState
   @override
   void initState() {
-    //open database
-    initialize(lightestPath);
-    _mainService = MainService();
-    String firstVertex = 'Physics Building';
-    devtools.log('$graph.vertexExists(FirstVertex)');
     super.initState();
+    getAllData();
+  }
+
+  getAllData() async {
+    await getAllNodes();
+    await getAllNodesWeights();
+    await initializeGraph();
   }
 
   @override
@@ -111,13 +116,24 @@ class _NewMapsViewState extends State<NewMapsView> {
       appBar: AppBar(
         title: const Text('map route'),
       ),
-      body: Stack(
-        children: <Widget>[
-          Text(
-              '\nLightest path a -> $lightestPath , weight: ${graph.weightAlong(lightestPath)}'),
-          Text(nodesWeights.toString()),
-        ],
-      ),
+      // body: FutureBuilder(
+      //     future: initializeGraph(),
+      //     builder: (context, snapshot) {
+      //       switch (snapshot.connectionState) {
+      //         case ConnectionState.done:
+      //           //lightestPath = snapshot.data as List<String>;
+      //           return Stack(
+      //             children: <Widget>[
+      //               Text(
+      //                   '\nLightest path a -> $lightestPath , weight: ${graph.weightAlong(lightestPath)}'),
+      //               Text(nodesWeights.toString()),
+      //             ],
+      //           );
+
+      //         default:
+      //           return const CircularProgressIndicator();
+      //       }
+      //     }),
     );
   }
 }
