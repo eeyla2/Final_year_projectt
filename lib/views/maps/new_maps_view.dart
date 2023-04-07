@@ -21,25 +21,43 @@ class NewMapsView extends StatefulWidget {
 }
 
 class _NewMapsViewState extends State<NewMapsView> {
+  //initialize lists to get nodesWeights and nodes and store selectableNodes
+  //in separate variable
   List<NodesModel> allNodes = [];
   List<WeightsModel> nodesWeights = [];
+  List<String> selectableDestinations = [];
   //LOCAL DB HELPER
   final LocalDBhelper _localDBhelper = LocalDBhelper();
   //GETTING ALL NODES
   getAllNodes() async {
     allNodes = await _localDBhelper.getNodes();
-    print('Total nodes ${allNodes.length}');
+    //variable to store selectable destinations
+
+//for loop that goes through all nodes
+    for (int j = 0; j < allNodes.length; ++j) {
+      //if node is selectable store it inside a selectableDestination variable
+      if (allNodes[j].isSelectable! == 1) {
+        selectableDestinations.add(allNodes[j].name!);
+      }
+      //print('Selectable Destinations = ${selectableDestinations.length}');
+    }
+    //devtools.log('Selectable Destinations = ${selectableDestinations.length}');
+
+    for (int j = 0; j < selectableDestinations.length; ++j) {
+      //devtools.log('Selectable Destinations = ${selectableDestinations}');
+    }
   }
 
   // GETTING ALL NODES WEIGHTS
   getAllNodesWeights() async {
     nodesWeights = await _localDBhelper.getWeights();
-    print('Total nodes weights = ${nodesWeights.length}');
+    //devtools.log('Total nodes weights = ${nodesWeights.length}');
   }
 
-  //initialize sum variable
+  //initialize sum variable for graph
   int sum(int left, int right) => left + right;
 
+//initialize weighted graph before inserting variables into it
   var graph = WeightedDirectedGraph<String, int>(
     {},
     summation: (int a, int b) => a + b,
@@ -49,8 +67,10 @@ class _NewMapsViewState extends State<NewMapsView> {
 
 //#######################get the nodes somewhere around here############################
 
+//variable to indicate the futures are done when set to false
   bool isLoading = true;
-  List<String> listOfPointsinBetween = []; //it will have the result
+  //variable to display the listOfPointsinBetween two destinations
+  //List<String> listOfPointsInBetween = []; //it will have the result
 
 //initialize comparator variable
   int comparator(
@@ -60,18 +80,14 @@ class _NewMapsViewState extends State<NewMapsView> {
     return s1.compareTo(s2);
   }
 
-//INITIALIZING GRAPH
-
+//INITIALIZING GRAPH WITH DATA
   Future<List<String>> initializeGraph() async {
-    //List<WeightsModel> specificNodeConnections = [];
-//make sure all the nodes have been extracted
+//make sure the node weight for a specific node to all its connections have been extracted with first loop
     for (int j = 0; j < allNodes.length; ++j) {
       List<WeightsModel> weights =
           await _localDBhelper.getNodesWeightsForOneNode(allNodes[j].name!);
+      //make sure all nodes weight for node used in the first loop are inserted into second loop
       for (int i = 0; i < weights.length; ++i) {
-        //     // nodesWeights[i].toString();
-        // print('')
-        // specificNodeConnections.add(weights[i]);
         graph.addEdge(
           weights[i].node1!,
           weights[i].node2!,
@@ -79,22 +95,35 @@ class _NewMapsViewState extends State<NewMapsView> {
         );
       }
     }
-    // specificNodeConnections = await _localDBhelper
-    //     .getNodesWeightsForOneNode('Right of Cripps Hill-four');
-    //print('SPECIFY NODES ${specificNodeConnections.length}');
-
-//calculate List of path in between
-    // List<String> listOfPointsInBetween = graph.lightestPath(
-    //     specificNodeConnections[0].node1!, specificNodeConnections[0].node2!);
 
     List<String> listOfPointsInBetween =
         graph.lightestPath('Physics Building', 'Student Services');
-    devtools.log('LIST OF POINTS ${listOfPointsInBetween}');
+    //devtools.log('LIST OF POINTS ${listOfPointsInBetween}');
 
-    graph.data.forEach((key, value) {
-      devtools.log('$key and $value');
-    });
+    // graph.data.forEach((key, value) {
+    //   devtools.log('$key and $value');
+    // });
+
+    isLoading = false;
+    //storeLightestPaths();
+
     return listOfPointsInBetween;
+  }
+
+  storeLightestPath() async {
+    //nested loops that calculate the lightestpath between one destination and all the others.
+    for (int j = 0; j < selectableDestinations.length; ++j) {
+      for (int i = 0; i < selectableDestinations.length; ++i) {
+        if ((selectableDestinations[j] != selectableDestinations[i])) {
+          //
+          //get weight and lightest path
+          var lightestPath = graph.lightestPath(
+              selectableDestinations[j], selectableDestinations[i]);
+          var weightOfLightestPath = graph.weightAlong(lightestPath);
+          //devtools.log('weight of lightest path = ${weightOfLightestPath}');
+        }
+      }
+    }
   }
 
 //override built-in function initState
@@ -108,6 +137,13 @@ class _NewMapsViewState extends State<NewMapsView> {
     await getAllNodes();
     await getAllNodesWeights();
     await initializeGraph();
+    await storeLightestPath();
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
   }
 
   @override

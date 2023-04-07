@@ -180,47 +180,28 @@ class _MainViewState extends State<MainView> {
   }
 }
 
-// Widget searchBarUI(BuildContext context) {
-
-//  final isPortrait = MediaQuery.of(context).orientation = Orientation.portrait;
-
-// return FloatingSearchBar(
-//  hint: 'Searching.....',
-// openAxisAlignment: 0.0,
-// maxwidth: 600,
-// axisalignment: 0.0,
-// scrollPadding: const EdgeInsets.only(top: 16, bottom: 20),
-// elevation: 4.0,
-// onQueryChanged: (query) {},
-// showDrawerHamburger: false,
-// transitionCurve: Curves.easeInOut,
-// transitionDuration: const Duration(milliseconds: 500),
-// transition: CircularFloatingSearchBarTransition(),
-// debounceDelay: const Duration(milliseconds: 500),
-// actions: const [
-// FloatingSearchBarAction(
-//  showIfClosed: false,
-// child: CircularButton(icon: null, onPressed: null),
-// ),
-// ],
-// builder: (BuildContext context, Animation<double> transition) {  },);
-// }
-
+//pinkit with spinning Lines for loading page
 const spinkit1 = SpinKitSpinningLines(
   color: Colors.black,
   size: 50.0,
 );
 
+//spinkit with spinninglines for second loading page
 const spinkit2 = SpinKitSpinningLines(
   color: Colors.blue,
   size: 50.0,
 );
 
+//floating search bar implementation
 Widget buildFloatingSearchBar(BuildContext context) {
+  //get a query(info) about the current media orientation
+  //and if it has an orientation of a portrait return true
   final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
 
+//return a floating search bar
   return FloatingSearchBar(
-    hint: 'Search...',
+    hint: 'Search destination', // text shown inside search bar
+    //all the characterstics of searchh bar
     scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
     transitionDuration: const Duration(milliseconds: 800),
     transitionCurve: Curves.easeInOut,
@@ -237,6 +218,7 @@ Widget buildFloatingSearchBar(BuildContext context) {
     // animating between opened and closed stated.
     transition: CircularFloatingSearchBarTransition(),
     actions: [
+      //implementation of the place icon in the search bar when it's pressed
       FloatingSearchBarAction(
         showIfOpened: false,
         child: CircularButton(
