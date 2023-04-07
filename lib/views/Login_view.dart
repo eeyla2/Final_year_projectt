@@ -92,8 +92,8 @@ class _LoginViewState extends State<LoginView> {
                   //user email verified
                   //SchedulerBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushNamedAndRemoveUntil(
-                    newMapsRoute,
-                    //mapsRoute,
+                    //newMapsRoute,
+                    mapsRoute,
                     (route) => false,
                   );
                   //});

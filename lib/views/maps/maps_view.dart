@@ -142,18 +142,27 @@ class _MainViewState extends State<MainView> {
                   switch (snapshot.connectionState) {
                     case ConnectionState.waiting:
                     case ConnectionState.active:
-                      return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        //scroll widget
-                        child:  SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height * 1,
-                                  child: Image.asset(
-                                    //loads an image on to the app
-                                    'images/map.png',
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
+                      return Stack(
+                        children: <Widget>[
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            //scroll widget
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 1,
+                              child: Image.asset(
+                                //loads an image on to the app
+                                'images/map.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 500,
+                            height: 60,
+                            //color: Colors.green,
+                            child: buildFloatingSearchBar(context),
+                          ),
+                        ],
                       );
 
                     default:
@@ -171,31 +180,31 @@ class _MainViewState extends State<MainView> {
   }
 }
 
-//Widget searchBarUI() {
+// Widget searchBarUI(BuildContext context) {
 
 //  final isPortrait = MediaQuery.of(context).orientation = Orientation.portrait;
 
-//return FloatingSearchBar(
+// return FloatingSearchBar(
 //  hint: 'Searching.....',
-//openAxisAlignment: 0.0,
-//maxwidth: 600,
+// openAxisAlignment: 0.0,
+// maxwidth: 600,
 // axisalignment: 0.0,
 // scrollPadding: const EdgeInsets.only(top: 16, bottom: 20),
-//elevation: 4.0,
-//onQueryChanged: (query) {},
-//showDrawerHamburger: false,
-//transitionCurve: Curves.easeInOut,
-//transitionDuration: const Duration(milliseconds: 500),
-//transition: CircularFloatingSearchBarTransition(),
-//debounceDelay: const Duration(milliseconds: 500),
-//actions: const [
+// elevation: 4.0,
+// onQueryChanged: (query) {},
+// showDrawerHamburger: false,
+// transitionCurve: Curves.easeInOut,
+// transitionDuration: const Duration(milliseconds: 500),
+// transition: CircularFloatingSearchBarTransition(),
+// debounceDelay: const Duration(milliseconds: 500),
+// actions: const [
 // FloatingSearchBarAction(
 //  showIfClosed: false,
-//child: CircularButton(icon: null, onPressed: null),
-//),
-//],
-//builder: (BuildContext context, Animation<double> transition) {  },);
-//}
+// child: CircularButton(icon: null, onPressed: null),
+// ),
+// ],
+// builder: (BuildContext context, Animation<double> transition) {  },);
+// }
 
 const spinkit1 = SpinKitSpinningLines(
   color: Colors.black,
