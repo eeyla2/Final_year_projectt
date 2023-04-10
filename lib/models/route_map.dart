@@ -3,8 +3,10 @@ import 'package:legsfree/constants/route_points_var.dart';
 import 'package:legsfree/constants/routes_map_var.dart';
 
 class RouteMapModel {
-  int? id, isKnown, location1, location2, maps, totalWeight, weightClass;
-  String? journeyName, mapName;
+  //variables
+  int? id, isKnown, totalWeight, weightClass;
+  String? journeyName, mapName, location1, location2, maps;
+  //constructor
   RouteMapModel(
       {this.id,
       this.isKnown,
@@ -15,6 +17,17 @@ class RouteMapModel {
       this.maps,
       this.totalWeight,
       this.weightClass});
+  //named second constructor
+  RouteMapModel.routeWeight({
+    required String startLocation,
+    required String destination,
+    required int weightRoute,
+  }) {
+    location1 = startLocation;
+    location2 = destination;
+    totalWeight = weightRoute;
+  }
+  //extracting data from database
   factory RouteMapModel.fromMap(Map<String, dynamic> json) => RouteMapModel(
       id: json[RouteMapsVar.id],
       isKnown: json[RouteMapsVar.isKnown],
@@ -25,6 +38,7 @@ class RouteMapModel {
       maps: json[RouteMapsVar.maps],
       totalWeight: json[RouteMapsVar.totalWeight],
       weightClass: json[RouteMapsVar.weightClass]);
+  //sending data to databse
   Map<String, dynamic> toMap() {
     return {
       RouteMapsVar.id: id,

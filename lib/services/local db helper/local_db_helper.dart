@@ -1,11 +1,14 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+//import 'package:connectivity/connectivity.dart';
 import 'package:legsfree/constants/nodes_var.dart';
 import 'package:legsfree/models/nodes_model.dart';
 import 'package:legsfree/models/route_map.dart';
 import 'package:legsfree/models/route_points.dart';
 import 'package:legsfree/models/weights.dart';
+//import 'package:legsfree/services/crud/crud_exceptions.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -13,6 +16,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../constants/route_points_var.dart';
 import '../../constants/routes_map_var.dart';
 import '../../constants/weight_var.dart';
+import 'db_exceptions.dart';
 
 class LocalDBhelper {
   Future<Database> initDatabase() async {
@@ -47,32 +51,31 @@ class LocalDBhelper {
 
     if (nodes.isNotEmpty) {
       nodesList = nodes.map((e) => NodesModel.fromMap(e)).toList();
+    } else {
+      throw CouldNotFindNode();
     }
-    //ADDING DATA FROM FIREBASE
-    await FirebaseFirestore.instance
-        .collection('nodes')
-        .orderBy('id')
-        .get()
-        .then((value) async {
-      if (nodesList.isEmpty) {
+
+    if (await isInternet()) {
+      nodesList = [];
+      await deleteAllDataFromTable('nodes', true);
+      //ADDING DATA FROM FIREBASE
+      return await FirebaseFirestore.instance
+          .collection('nodes')
+          .orderBy('id')
+          .get()
+          .then((value) async {
         for (int i = 0; i < value.docs.length; i++) {
           NodesModel nodes = NodesModel.fromDocumentSnapshot(value.docs[i]);
           nodesList.add(nodes);
-          addNodesDataInLocalDB(nodes).then((value) => print('VAL $value'));
+          addNodesDataInLocalDB(nodes);
         }
-      } else {
-        for (int i = 0; i < value.docs.length; i++) {
-          if (!await isDataAlreadySaved(value.docs[i], 'nodes')) {
-            NodesModel nodes = NodesModel.fromDocumentSnapshot(value.docs[i]);
-            nodesList.add(nodes);
-            addNodesDataInLocalDB(nodes).then((value) => print('VAL $value'));
-          }
-        }
-      }
-    });
-
-    print('NODES DATA IS ${nodesList.length}');
-    return nodesList;
+        print('NODES DATA IS ${nodesList.length}');
+        return nodesList;
+      });
+    } else {
+      print('NODES DATA IS ${nodesList.length}');
+      return nodesList;
+    }
   }
 
   //GET ROUTE MAP
@@ -84,36 +87,30 @@ class LocalDBhelper {
     if (routeMap.isNotEmpty) {
       routeMapList = routeMap.map((e) => RouteMapModel.fromMap(e)).toList();
     }
-    //ADDING DATA FROM FIREBASE
-    await FirebaseFirestore.instance
-        .collection('route_map')
-        .orderBy('id')
-        .get()
-        .then((value) async {
-      if (routeMapList.isEmpty) {
+    // else {
+    //   throw CouldNotFindMapImage();
+    // }
+    if (await isInternet()) {
+      routeMapList = [];
+      await deleteAllDataFromTable('route_map', true);
+      //ADDING DATA FROM FIREBASE
+      return await FirebaseFirestore.instance
+          .collection('route_map')
+          .orderBy('id')
+          .get()
+          .then((value) async {
         for (int i = 0; i < value.docs.length; i++) {
           RouteMapModel routeMaps =
               RouteMapModel.fromDocumentSnapshot(value.docs[i]);
           routeMapList.add(routeMaps);
-
           addRouteMapDataInLocalDB(routeMaps)
               .then((value) => print('VAL $value'));
         }
-      } else {
-        for (int i = 0; i < value.docs.length; i++) {
-          if (!await isDataAlreadySaved(value.docs[i], 'route_map')) {
-            RouteMapModel routeMaps =
-                RouteMapModel.fromDocumentSnapshot(value.docs[i]);
-            routeMapList.add(routeMaps);
-            addRouteMapDataInLocalDB(routeMaps)
-                .then((value) => print('VAL $value'));
-          }
-        }
-      }
-    });
-
-    print('ROUTE MAP DATA IS ${routeMapList.length}');
-    return routeMapList;
+        return routeMapList;
+      });
+    } else {
+      return routeMapList;
+    }
   }
 
   //GET ROUTE POINTS
@@ -126,38 +123,33 @@ class LocalDBhelper {
       routePointList =
           routePoints.map((e) => RoutePointsModel.fromMap(e)).toList();
     }
-    //ADDING DATA FROM FIREBASE
-    try {
+    // else {
+    //   throw CouldNotFindPointsInBetween();
+    // }
+
+    if (await isInternet()) {
+      routePointList = [];
+      await deleteAllDataFromTable('route_points', true);
+      //ADDING DATA FROM FIREBASE
       await FirebaseFirestore.instance
           .collection('route_points')
           .orderBy('id')
           .get()
           .then((value) async {
-        if (routePointList.isEmpty) {
-          for (int i = 0; i < value.docs.length; i++) {
-            RoutePointsModel routePoints =
-                RoutePointsModel.fromDocumentSnapshot(value.docs[i]);
-            routePointList.add(routePoints);
-            addRoutePointsDataInLocalDB(routePoints)
-                .then((value) => print('VAL $value'));
-          }
-        } else {
-          for (int i = 0; i < value.docs.length; i++) {
-            if (!await isDataAlreadySaved(value.docs[i], 'route_points')) {
-              RoutePointsModel routePoints =
-                  RoutePointsModel.fromDocumentSnapshot(value.docs[i]);
-              routePointList.add(routePoints);
-              addRoutePointsDataInLocalDB(routePoints)
-                  .then((value) => print('VAL $value'));
-            }
-          }
+        for (int i = 0; i < value.docs.length; i++) {
+          RoutePointsModel routePoints =
+              RoutePointsModel.fromDocumentSnapshot(value.docs[i]);
+          routePointList.add(routePoints);
+          addRoutePointsDataInLocalDB(routePoints)
+              .then((value) => print('VAL $value'));
         }
       });
-    } catch (e) {
-      print(e);
+      print('ROUTE POINTS DATA IS ${routePointList.length}');
+      return routePointList;
+    } else {
+      print('ROUTE POINTS DATA IS ${routePointList.length}');
+      return routePointList;
     }
-    print('ROUTE POINTS DATA IS ${routePointList.length}');
-    return routePointList;
   }
 
   //GET WEIGHT
@@ -168,40 +160,32 @@ class LocalDBhelper {
 
     if (weight.isNotEmpty) {
       weightList = weight.map((e) => WeightsModel.fromMap(e)).toList();
+    } else {
+      throw CouldNotFindNodesWeight();
     }
-    //ADDING DATA FROM FIREBASE
-    try {
-      await FirebaseFirestore.instance
+
+    if (await isInternet()) {
+      weightList = [];
+      await deleteAllDataFromTable('weights', true);
+      //ADDING DATA FROM FIREBASE
+      return await FirebaseFirestore.instance
           .collection('weights')
           .orderBy('weight_id')
           .get()
           .then((value) async {
-        if (weightList.isEmpty) {
-          for (int i = 0; i < value.docs.length; i++) {
-            WeightsModel weights =
-                WeightsModel.fromDocumentSnapshot(value.docs[i]);
-            weightList.add(weights);
-
-            addWeightsDataInLocalDB(weights)
-                .then((value) => print('VAL $value'));
-          }
-        } else {
-          for (int i = 0; i < value.docs.length; i++) {
-            if (!await isDataAlreadySaved(value.docs[i], 'weights')) {
-              WeightsModel weights =
-                  WeightsModel.fromDocumentSnapshot(value.docs[i]);
-              weightList.add(weights);
-              addWeightsDataInLocalDB(weights)
-                  .then((value) => print('VAL $value'));
-            }
-          }
+        for (int i = 0; i < value.docs.length; i++) {
+          WeightsModel weights =
+              WeightsModel.fromDocumentSnapshot(value.docs[i]);
+          weightList.add(weights);
+          addWeightsDataInLocalDB(weights);
         }
+        print('WEIGHTS DATA IS ${weightList.length}');
+        return weightList;
       });
-    } catch (e) {
-      print(e);
+    } else {
+      print('WEIGHTS DATA IS ${weightList.length}');
+      return weightList;
     }
-    print('WEIGHTS DATA IS ${weightList.length}');
-    return weightList;
   }
 
   //ADD NODES DATA
@@ -247,109 +231,120 @@ class LocalDBhelper {
 
   // DELETE NODE
   Future<void> deleteNode(int id) async {
-    try {
-      //DELETING FROM LOCAL DB
-      final db = await initDatabase();
-      await db.delete('nodes', where: 'id = ?', whereArgs: [id]);
-      //DELETING FROM FIREBASE
-      final firebaseData = await FirebaseFirestore.instance
-          .collection('nodes')
-          .where('id', isEqualTo: id)
-          .get();
-      await FirebaseFirestore.instance
-          .collection('nodes')
-          .doc(firebaseData.docs[0].id)
-          .delete();
-    } catch (e) {
-      print(e);
+    //DELETING FROM LOCAL DB
+    final db = await initDatabase();
+    final deletedCount =
+        await db.delete('nodes', where: 'id = ?', whereArgs: [id]);
+
+    if (deletedCount != 1) {
+      throw CouldNotDeleteNode();
     }
+    //DELETING FROM FIREBASE
+    final firebaseData = await FirebaseFirestore.instance
+        .collection('nodes')
+        .where('id', isEqualTo: id)
+        .get();
+    await FirebaseFirestore.instance
+        .collection('nodes')
+        .doc(firebaseData.docs[0].id)
+        .delete();
   }
 
   // DELETE ROUTE MAP
   Future<void> deleteRouteMap(int id) async {
-    try {
-      //DELETING FROM LOCAL DB
-      final db = await initDatabase();
-      await db.delete('route_map', where: 'id = ?', whereArgs: [id]);
-      //DELETING FROM FIREBASE
-      final firebaseData = await FirebaseFirestore.instance
-          .collection('route_map')
-          .where('id', isEqualTo: id)
-          .get();
-      await FirebaseFirestore.instance
-          .collection('route_map')
-          .doc(firebaseData.docs[0].id)
-          .delete();
-    } catch (e) {
-      print(e);
+    //DELETING FROM LOCAL DB
+    final db = await initDatabase();
+    final deletedCount =
+        await db.delete('route_map', where: 'id = ?', whereArgs: [id]);
+
+    if (deletedCount != 1) {
+      throw CouldNotDeleteMapImage();
     }
+    //DELETING FROM FIREBASE
+    final firebaseData = await FirebaseFirestore.instance
+        .collection('route_map')
+        .where('id', isEqualTo: id)
+        .get();
+    await FirebaseFirestore.instance
+        .collection('route_map')
+        .doc(firebaseData.docs[0].id)
+        .delete();
   }
 
   // DELETE ROUTE POINTS
   Future<void> deleteRoutePoints(int id) async {
-    try {
-      //DELETING FROM LOCAL DB
-      final db = await initDatabase();
-      await db.delete('route_points', where: 'id = ?', whereArgs: [id]);
-      //DELETING FROM FIREBASE
-      final firebaseData = await FirebaseFirestore.instance
-          .collection('route_points')
-          .where('id', isEqualTo: id)
-          .get();
-      await FirebaseFirestore.instance
-          .collection('route_points')
-          .doc(firebaseData.docs[0].id)
-          .delete();
-    } catch (e) {
-      print(e);
+    //DELETING FROM LOCAL DB
+    final db = await initDatabase();
+    final deletedCount =
+        await db.delete('route_points', where: 'id = ?', whereArgs: [id]);
+
+    if (deletedCount != 1) {
+      throw CouldNotDeletePointsInBetween();
     }
+
+    //DELETING FROM FIREBASE
+    final firebaseData = await FirebaseFirestore.instance
+        .collection('route_points')
+        .where('id', isEqualTo: id)
+        .get();
+    await FirebaseFirestore.instance
+        .collection('route_points')
+        .doc(firebaseData.docs[0].id)
+        .delete();
   }
 
   // DELETE ROUTE POINTS
   Future<void> deleteWeights(int id) async {
-    try {
-      //DELETING FROM LOCAL DB
-      final db = await initDatabase();
-      await db.delete('weights', where: 'weight_id = ?', whereArgs: [id]);
-      //DELETING FROM FIREBASE
-      final firebaseData = await FirebaseFirestore.instance
-          .collection('weights')
-          .where('weight_id', isEqualTo: id)
-          .get();
-      await FirebaseFirestore.instance
-          .collection('weights')
-          .doc(firebaseData.docs[0].id)
-          .delete();
-    } catch (e) {
-      print(e);
+    //DELETING FROM LOCAL DB
+    final db = await initDatabase();
+    final deletedCount =
+        await db.delete('weights', where: 'weight_id = ?', whereArgs: [id]);
+
+    if (deletedCount != 1) {
+      throw CouldNotDeleteNodesWeight();
     }
+    //DELETING FROM FIREBASE
+    final firebaseData = await FirebaseFirestore.instance
+        .collection('weights')
+        .where('weight_id', isEqualTo: id)
+        .get();
+    await FirebaseFirestore.instance
+        .collection('weights')
+        .doc(firebaseData.docs[0].id)
+        .delete();
   }
 
   //DELETE ALL DATA FROM TABLE
-  Future<void> deleteAllDataFromTable(String tableName) async {
+  Future<void> deleteAllDataFromTable(
+      String tableName, bool isLocalOnly) async {
     final db = await initDatabase();
     await db.delete(tableName);
     //DELETEING FROM FIREBASE
-    final firebaseData =
-        await FirebaseFirestore.instance.collection(tableName).get();
-    for (int i = 0; i < firebaseData.docs.length; i++) {
-      await FirebaseFirestore.instance
-          .collection(tableName)
-          .doc(firebaseData.docs[i].id)
-          .delete();
+    if (!isLocalOnly) {
+      final firebaseData =
+          await FirebaseFirestore.instance.collection(tableName).get();
+      for (int i = 0; i < firebaseData.docs.length; i++) {
+        await FirebaseFirestore.instance
+            .collection(tableName)
+            .doc(firebaseData.docs[i].id)
+            .delete();
+      }
     }
   }
 
   // UPDATE NODES
-  Future<void> updateNodes(NodesModel data) async {
-    try {
-      final db = await initDatabase();
-      await db.update(
-        'nodes',
-        data.toMap(),
-        where: 'id = ?',
-        whereArgs: [data.id],
-      );
+  Future<int> updateNodes(NodesModel data) async {
+    final db = await initDatabase();
+    final updateCount = await db.update(
+      'nodes',
+      data.toMap(),
+      where: 'id = ?',
+      whereArgs: [data.id],
+    );
+
+    if (updateCount == 0) {
+      throw CouldNotUpdateNode();
+    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('nodes')
@@ -359,21 +354,23 @@ class LocalDBhelper {
           .collection('nodes')
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
-    } catch (e) {
-      print(e);
+      return updateCount;
     }
   }
 
   // UPDATE ROUTE MAP
-  Future<void> updateRouteMap(RouteMapModel data) async {
-    try {
-      final db = await initDatabase();
-      await db.update(
-        'route_map',
-        data.toMap(),
-        where: 'id = ?',
-        whereArgs: [data.id],
-      );
+  Future<int> updateRouteMap(RouteMapModel data) async {
+    final db = await initDatabase();
+    var updateCount = await db.update(
+      'route_map',
+      data.toMap(),
+      where: 'id = ?',
+      whereArgs: [data.id],
+    );
+
+    if (updateCount == 0) {
+      throw CouldNotUpdateMapImage();
+    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('route_map')
@@ -383,21 +380,23 @@ class LocalDBhelper {
           .collection('route_map')
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
-    } catch (e) {
-      print(e);
+      return updateCount;
     }
   }
 
   //UPDATE ROUTE POINTS
-  Future<void> updateRoutePoints(RoutePointsModel data) async {
-    try {
-      final db = await initDatabase();
-      await db.update(
-        'route_points',
-        data.toMap(),
-        where: 'id = ?',
-        whereArgs: [data.id],
-      );
+  Future<int> updateRoutePoints(RoutePointsModel data) async {
+    final db = await initDatabase();
+    final updateCount = await db.update(
+      'route_points',
+      data.toMap(),
+      where: 'id = ?',
+      whereArgs: [data.id],
+    );
+
+    if (updateCount == 0) {
+      throw CouldNotUpdateNode();
+    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('route_points')
@@ -407,21 +406,23 @@ class LocalDBhelper {
           .collection('route_points')
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
-    } catch (e) {
-      print(e);
+      return updateCount;
     }
   }
 
   //UPDATE WEIGHTS
-  Future<void> updateWeights(WeightsModel data) async {
-    try {
-      final db = await initDatabase();
-      await db.update(
-        'weights',
-        data.toMap(),
-        where: 'weight_id = ?',
-        whereArgs: [data.weightID],
-      );
+  Future<int> updateWeights(WeightsModel data) async {
+    final db = await initDatabase();
+    final updateCount = await db.update(
+      'weights',
+      data.toMap(),
+      where: 'weight_id = ?',
+      whereArgs: [data.weightID],
+    );
+
+    if (updateCount == 0) {
+      throw CouldNotUpdateNode();
+    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('weights')
@@ -431,13 +432,12 @@ class LocalDBhelper {
           .collection('weights')
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
-    } catch (e) {
-      print(e);
+      return updateCount;
     }
   }
 
   //GET NODES WEIGHTS FOR ONE NODE
-  Future<List<WeightsModel>> getNodesWeightsForOneNode(String? nodeName) async {
+  Future<List<WeightsModel>> getNodesWeightsForOneNode(String nodeName) async {
     final database = await initDatabase();
     List<WeightsModel> weightsList = [];
     var weightsData = await database.query(
@@ -448,6 +448,8 @@ class LocalDBhelper {
 
     if (weightsData.isNotEmpty) {
       weightsList = weightsData.map((e) => WeightsModel.fromMap(e)).toList();
+    } else {
+      throw CouldNotFindSpecificNodesWeight(nodeName);
     }
     return weightsList;
   }
@@ -464,6 +466,8 @@ class LocalDBhelper {
 
     if (nodesData.isNotEmpty) {
       nodesList = nodesData.map((e) => NodesModel.fromMap(e)).toList();
+    } else {
+      throw CouldNotFindSpecificNode();
     }
     return nodesList;
   }
@@ -482,6 +486,8 @@ class LocalDBhelper {
     if (routeMapsData.isNotEmpty) {
       routeMapsList =
           routeMapsData.map((e) => RouteMapModel.fromMap(e)).toList();
+    } else {
+      throw CouldNotFindSpecificMapImage();
     }
     return routeMapsList;
   }
@@ -505,7 +511,19 @@ class LocalDBhelper {
           routePointsList.add(RoutePointsModel.fromMap(routePointsData[i]));
         }
       }
+    } else {
+      throw CouldNotFindSpecificPointsInBetween();
     }
     return routePointsList;
+  }
+
+  //FOR CHECKING INTERNET
+  Future<bool> isInternet() async {
+    var connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      return false; // No internet connection
+    } else {
+      return true; // Internet connection available
+    }
   }
 }
