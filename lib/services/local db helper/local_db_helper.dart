@@ -17,6 +17,7 @@ import '../../constants/route_points_var.dart';
 import '../../constants/routes_map_var.dart';
 import '../../constants/weight_var.dart';
 import 'db_exceptions.dart';
+import 'dart:developer' as devtools show log;
 
 class LocalDBhelper {
   Future<Database> initDatabase() async {
@@ -28,61 +29,64 @@ class LocalDBhelper {
   Future<void> _onCreate(Database db, int version) async {
     //NODES TABLE
     await db.execute(
-      "CREATE TABLE nodes(id INTEGER, ${NodesVar.isSelectable} INTEGER, ${NodesVar.x} INTEGER, ${NodesVar.y} INTEGER, ${NodesVar.name} TEXT)",
+      "CREATE TABLE nodes(${NodesVar.isSelectable} INTEGER, ${NodesVar.x} INTEGER, ${NodesVar.y} INTEGER, ${NodesVar.name} TEXT)",
     );
     //ROUTE MAPS
     await db.execute(
-        'CREATE TABLE route_map(id INTEGER, ${RouteMapsVar.isKnown} INTEGER, ${RouteMapsVar.journeyName} TEXT, ${RouteMapsVar.location1} INTEGER, ${RouteMapsVar.location2} INTEGER, ${RouteMapsVar.mapName} TEXT, ${RouteMapsVar.maps} INTEGER, ${RouteMapsVar.totalWeight} INTEGER, ${RouteMapsVar.weightClass} INTEGER)');
+        'CREATE TABLE route_map(${RouteMapsVar.isKnown} INTEGER, ${RouteMapsVar.journeyName} TEXT, ${RouteMapsVar.location1} TEXT, ${RouteMapsVar.location2} TEXT, ${RouteMapsVar.mapName} TEXT, ${RouteMapsVar.maps} TEXT, ${RouteMapsVar.totalWeight} INTEGER, ${RouteMapsVar.weightClass} INTEGER)');
     //ROUTE POINTS
     await db.execute(
-        'CREATE TABLE route_points(id INTEGER, ${RoutePointsVar.location1} INTEGER, ${RoutePointsVar.location2} INTEGER, ${RoutePointsVar.points} INTEGER, ${RoutePointsVar.position} INTEGER, ${RoutePointsVar.routeId} INTEGER)');
+        'CREATE TABLE route_points(${RoutePointsVar.journeyName} TEXT, ${RoutePointsVar.location1} TEXT, ${RoutePointsVar.location2} TEXT, ${RoutePointsVar.points} TEXT, ${RoutePointsVar.position} INTEGER)');
     //WEIGHTS
     await db.execute(
-        'CREATE TABLE weights(weight_id INTEGER, ${WeightVar.node1} TEXT, ${WeightVar.node2} TEXT, ${WeightVar.weight} INTEGER, ${WeightVar.weightClass} INTEGER)');
+        'CREATE TABLE weights(${WeightVar.node1} TEXT, ${WeightVar.node2} TEXT, ${WeightVar.weight} INTEGER, ${WeightVar.weightClass} INTEGER)');
   }
 
   //GET NODES TABLE DATA
   Future<List<NodesModel>> getNodes() async {
     final database = await initDatabase();
+    try {
+      //GET DATA FROM LOCAL DB
+      List<NodesModel> nodesList = [];
+      var nodes = await database.query('nodes', orderBy: 'name');
 
-    //GET DATA FROM LOCAL DB
-    List<NodesModel> nodesList = [];
-    var nodes = await database.query('nodes', orderBy: 'id');
+      if (nodes.isNotEmpty) {
+        nodesList = nodes.map((e) => NodesModel.fromMap(e)).toList();
+      }
 
-    if (nodes.isNotEmpty) {
-      nodesList = nodes.map((e) => NodesModel.fromMap(e)).toList();
-    } else {
-      throw CouldNotFindNode();
-    }
-
-    if (await isInternet()) {
-      nodesList = [];
-      await deleteAllDataFromTable('nodes', true);
-      //ADDING DATA FROM FIREBASE
-      return await FirebaseFirestore.instance
-          .collection('nodes')
-          .orderBy('id')
-          .get()
-          .then((value) async {
-        for (int i = 0; i < value.docs.length; i++) {
-          NodesModel nodes = NodesModel.fromDocumentSnapshot(value.docs[i]);
-          nodesList.add(nodes);
-          addNodesDataInLocalDB(nodes);
-        }
-        print('NODES DATA IS ${nodesList.length}');
+      if (await isInternet()) {
+        nodesList = [];
+        await deleteAllDataFromTable('nodes', true);
+        //ADDING DATA FROM FIREBASE
+        return await FirebaseFirestore.instance
+            .collection('nodes')
+            .orderBy('name')
+            .get()
+            .then((value) async {
+          for (int i = 0; i < value.docs.length; i++) {
+            NodesModel nodes = NodesModel.fromDocumentSnapshot(value.docs[i]);
+            nodesList.add(nodes);
+            addNodesDataInLocalDB(nodes);
+          }
+          devtools.log('NODES DATA IS ${nodesList.length}');
+          return nodesList;
+        });
+      } else {
+        devtools.log('NODES DATA IS ${nodesList.length}');
         return nodesList;
-      });
-    } else {
-      print('NODES DATA IS ${nodesList.length}');
-      return nodesList;
+      }
+    } catch (e) {
+      devtools.log('error is $e');
+      throw CouldNotFindNode();
     }
   }
 
   //GET ROUTE MAP
   Future<List<RouteMapModel>> getRouteMap() async {
     final database = await initDatabase();
+
     List<RouteMapModel> routeMapList = [];
-    var routeMap = await database.query('route_map', orderBy: 'id');
+    var routeMap = await database.query('route_map', orderBy: 'weight_class');
 
     if (routeMap.isNotEmpty) {
       routeMapList = routeMap.map((e) => RouteMapModel.fromMap(e)).toList();
@@ -96,7 +100,7 @@ class LocalDBhelper {
       //ADDING DATA FROM FIREBASE
       return await FirebaseFirestore.instance
           .collection('route_map')
-          .orderBy('id')
+          .orderBy('weight_class')
           .get()
           .then((value) async {
         for (int i = 0; i < value.docs.length; i++) {
@@ -116,75 +120,83 @@ class LocalDBhelper {
   //GET ROUTE POINTS
   Future<List<RoutePointsModel>> getRoutePoints() async {
     final database = await initDatabase();
-    List<RoutePointsModel> routePointList = [];
-    var routePoints = await database.query('route_points', orderBy: 'id');
+    try {
+      List<RoutePointsModel> routePointList = [];
+      var routePoints =
+          await database.query('route_points', orderBy: 'position');
 
-    if (routePoints.isNotEmpty) {
-      routePointList =
-          routePoints.map((e) => RoutePointsModel.fromMap(e)).toList();
-    }
-    // else {
-    //   throw CouldNotFindPointsInBetween();
-    // }
+      if (routePoints.isNotEmpty) {
+        routePointList =
+            routePoints.map((e) => RoutePointsModel.fromMap(e)).toList();
+      }
 
-    if (await isInternet()) {
-      routePointList = [];
-      await deleteAllDataFromTable('route_points', true);
-      //ADDING DATA FROM FIREBASE
-      await FirebaseFirestore.instance
-          .collection('route_points')
-          .orderBy('id')
-          .get()
-          .then((value) async {
-        for (int i = 0; i < value.docs.length; i++) {
-          RoutePointsModel routePoints =
-              RoutePointsModel.fromDocumentSnapshot(value.docs[i]);
-          routePointList.add(routePoints);
-          addRoutePointsDataInLocalDB(routePoints)
-              .then((value) => print('VAL $value'));
-        }
-      });
-      print('ROUTE POINTS DATA IS ${routePointList.length}');
-      return routePointList;
-    } else {
-      print('ROUTE POINTS DATA IS ${routePointList.length}');
-      return routePointList;
+      if (await isInternet()) {
+        routePointList = [];
+        await deleteAllDataFromTable('route_points', true);
+        //ADDING DATA FROM FIREBASE
+        await FirebaseFirestore.instance
+            .collection('route_points')
+            .orderBy('position')
+            .get()
+            .then((value) async {
+          for (int i = 0; i < value.docs.length; i++) {
+            //print("VALUE ${value.docs[i].get('position')}");
+            RoutePointsModel routePoints =
+                RoutePointsModel.fromDocumentSnapshot(value.docs[i]);
+            routePointList.add(routePoints);
+            addRoutePointsDataInLocalDB(routePoints)
+                .then((value) => devtools.log('VAL $value'));
+          }
+        });
+        devtools.log('ROUTE POINTS DATA IS ${routePointList.length}');
+        return routePointList;
+      } else {
+        devtools.log('ROUTE POINTS DATA IS ${routePointList.length}');
+        return routePointList;
+      }
+    } catch (e) {
+      print('the error for getting the point in between routes is $e');
+      throw Exception;
+      //CouldNotFindPointsInBetween();
     }
   }
 
   //GET WEIGHT
   Future<List<WeightsModel>> getWeights() async {
     final database = await initDatabase();
-    List<WeightsModel> weightList = [];
-    var weight = await database.query('weights', orderBy: 'weight_id');
+    try {
+      List<WeightsModel> weightList = [];
+      var weight = await database.query('weights', orderBy: 'weight_class');
 
-    if (weight.isNotEmpty) {
-      weightList = weight.map((e) => WeightsModel.fromMap(e)).toList();
-    } else {
-      throw CouldNotFindNodesWeight();
-    }
+      if (weight.isNotEmpty) {
+        weightList = weight.map((e) => WeightsModel.fromMap(e)).toList();
+      }
 
-    if (await isInternet()) {
-      weightList = [];
-      await deleteAllDataFromTable('weights', true);
-      //ADDING DATA FROM FIREBASE
-      return await FirebaseFirestore.instance
-          .collection('weights')
-          .orderBy('weight_id')
-          .get()
-          .then((value) async {
-        for (int i = 0; i < value.docs.length; i++) {
-          WeightsModel weights =
-              WeightsModel.fromDocumentSnapshot(value.docs[i]);
-          weightList.add(weights);
-          addWeightsDataInLocalDB(weights);
-        }
-        print('WEIGHTS DATA IS ${weightList.length}');
+      if (await isInternet()) {
+        weightList = [];
+        await deleteAllDataFromTable('weights', true);
+        //ADDING DATA FROM FIREBASE
+        return await FirebaseFirestore.instance
+            .collection('weights')
+            .orderBy('weight_class')
+            .get()
+            .then((value) async {
+          for (int i = 0; i < value.docs.length; i++) {
+            WeightsModel weights =
+                WeightsModel.fromDocumentSnapshot(value.docs[i]);
+            weightList.add(weights);
+            addWeightsDataInLocalDB(weights);
+          }
+          devtools.log('WEIGHTS DATA IS ${weightList.length}');
+          return weightList;
+        });
+      } else {
+        devtools.log('WEIGHTS DATA IS ${weightList.length}');
         return weightList;
-      });
-    } else {
-      print('WEIGHTS DATA IS ${weightList.length}');
-      return weightList;
+      }
+    } catch (e) {
+      devtools.log('the error is $e');
+      throw CouldNotFindNodesWeight();
     }
   }
 
@@ -210,23 +222,6 @@ class LocalDBhelper {
   Future<int> addWeightsDataInLocalDB(WeightsModel modelData) async {
     final database = await initDatabase();
     return await database.insert('weights', modelData.toMap());
-  }
-
-  Future<bool> isDataAlreadySaved(
-      dynamic firebaseData, String tableName) async {
-    final db = await initDatabase();
-    int count;
-    if (tableName == 'weights') {
-      print('WEIGHT');
-      count = Sqflite.firstIntValue(await db.rawQuery(
-          'SELECT COUNT(*) FROM $tableName WHERE weight_id = ?',
-          [firebaseData['weight_id']]))!;
-    } else {
-      count = Sqflite.firstIntValue(await db.rawQuery(
-          'SELECT COUNT(*) FROM $tableName WHERE id = ?',
-          [firebaseData['id']]))!;
-    }
-    return count > 0;
   }
 
   // DELETE NODE
@@ -272,11 +267,12 @@ class LocalDBhelper {
   }
 
   // DELETE ROUTE POINTS
-  Future<void> deleteRoutePoints(int id) async {
+  Future<int> deleteRoutePoints(RoutePointsModel data) async {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
-    final deletedCount =
-        await db.delete('route_points', where: 'id = ?', whereArgs: [id]);
+    final deletedCount = await db.delete('route_points',
+        where: 'journey_name = ? and position = ?',
+        whereArgs: [data.journeyName, data.position]);
 
     if (deletedCount != 1) {
       throw CouldNotDeletePointsInBetween();
@@ -285,12 +281,15 @@ class LocalDBhelper {
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
         .collection('route_points')
-        .where('id', isEqualTo: id)
+        .where('journey_name', isEqualTo: data.journeyName)
+        .where('position', isEqualTo: data.position)
         .get();
     await FirebaseFirestore.instance
         .collection('route_points')
         .doc(firebaseData.docs[0].id)
         .delete();
+
+    return deletedCount;
   }
 
   // DELETE ROUTE POINTS
@@ -338,8 +337,8 @@ class LocalDBhelper {
     final updateCount = await db.update(
       'nodes',
       data.toMap(),
-      where: 'id = ?',
-      whereArgs: [data.id],
+      where: 'name = ?',
+      whereArgs: [data.name],
     );
 
     if (updateCount == 0) {
@@ -348,7 +347,7 @@ class LocalDBhelper {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('nodes')
-          .where('id', isEqualTo: data.id)
+          .where('name', isEqualTo: data.name)
           .get();
       await FirebaseFirestore.instance
           .collection('nodes')
@@ -364,8 +363,8 @@ class LocalDBhelper {
     var updateCount = await db.update(
       'route_map',
       data.toMap(),
-      where: 'id = ?',
-      whereArgs: [data.id],
+      where: 'journey_name = ?',
+      whereArgs: [data.journeyName],
     );
 
     if (updateCount == 0) {
@@ -374,7 +373,7 @@ class LocalDBhelper {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('route_map')
-          .where('id', isEqualTo: data.id)
+          .where('journey_name', isEqualTo: data.journeyName)
           .get();
       await FirebaseFirestore.instance
           .collection('route_map')
@@ -390,8 +389,8 @@ class LocalDBhelper {
     final updateCount = await db.update(
       'route_points',
       data.toMap(),
-      where: 'id = ?',
-      whereArgs: [data.id],
+      where: 'journey_name = ? and position = ?',
+      whereArgs: [data.journeyName, data.position],
     );
 
     if (updateCount == 0) {
@@ -400,7 +399,11 @@ class LocalDBhelper {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('route_points')
-          .where('id', isEqualTo: data.id)
+          .where(
+            'journey_name',
+            isEqualTo: data.journeyName,
+          )
+          .where('position', isEqualTo: data.position)
           .get();
       await FirebaseFirestore.instance
           .collection('route_points')
@@ -416,8 +419,8 @@ class LocalDBhelper {
     final updateCount = await db.update(
       'weights',
       data.toMap(),
-      where: 'weight_id = ?',
-      whereArgs: [data.weightID],
+      where: 'node_1 = ?',
+      whereArgs: [data.node1],
     );
 
     if (updateCount == 0) {
@@ -426,7 +429,7 @@ class LocalDBhelper {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('weights')
-          .where('weight_id', isEqualTo: data.weightID)
+          .where('node_1', isEqualTo: data.node1)
           .get();
       await FirebaseFirestore.instance
           .collection('weights')
@@ -494,23 +497,26 @@ class LocalDBhelper {
 
   //GET ROUTE POINTS FOR ONE JOURNEY
   Future<List<RoutePointsModel>> getRoutePointsForOneJourney(
-      int routeID, int position) async {
+      String journeyName) async {
     final database = await initDatabase();
     List<RoutePointsModel> routePointsList = [];
     var routePointsData = await database.query(
       'route_points',
-      where: 'route_id = ?',
-      whereArgs: [routeID],
+      where: 'journey_name = ?',
+      whereArgs: [journeyName],
+      orderBy: 'position',
     );
 
     if (routePointsData.isNotEmpty) {
+      routePointsList =
+          routePointsData.map((e) => RoutePointsModel.fromMap(e)).toList();
       // routePointsList =
       //     routePointsData.map((e) => RoutePointsModel.fromMap(e)).toList();
-      for (int i = 0; i < routePointsData.length; i++) {
-        if (routePointsData[i]['position'] == position) {
-          routePointsList.add(RoutePointsModel.fromMap(routePointsData[i]));
-        }
-      }
+      // for (int i = 0; i < routePointsData.length; i++) {
+      //   if (routePointsData[i]['position'] == position) {
+      //     routePointsList.add(RoutePointsModel.fromMap(routePointsData[i]));
+      //   }
+      // }
     } else {
       throw CouldNotFindSpecificPointsInBetween();
     }

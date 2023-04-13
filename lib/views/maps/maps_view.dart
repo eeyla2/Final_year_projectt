@@ -1,5 +1,5 @@
 //mainview widget
-
+import 'dart:ui' as ui;
 import 'dart:async';
 //import 'dart:math';
 
@@ -136,43 +136,39 @@ class _MainViewState extends State<MainView> {
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.done:
-              return StreamBuilder(
-                stream: _mainService.allNodes,
-                builder: (context, snapshot) {
-                  switch (snapshot.connectionState) {
-                    case ConnectionState.waiting:
-                    case ConnectionState.active:
-                      return Stack(
-                        children: <Widget>[
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            //scroll widget
-                            child: SizedBox(
-                              height: MediaQuery.of(context).size.height * 1,
-                              child: Image.asset(
-                                //loads an image on to the app
-                                'images/map.png',
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            width: 500,
-                            height: 60,
-                            //color: Colors.green,
-                            child: buildFloatingSearchBar(context),
-                          ),
-                        ],
-                      );
-
-                    default:
-                      return spinkit2;
-                  }
-                },
+              return Stack(
+                children: <Widget>[
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    //scroll widget
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 1,
+                      child: Image.asset(
+                        //loads an image on to the app
+                        'images/map.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 500,
+                    height: 60,
+                    //color: Colors.green,
+                    child: buildFloatingSearchBar(context),
+                  ),
+                  SizedBox(
+                    width: 500,
+                    height: 60,
+                    child: CustomPaint(
+                      //paint
+                      painter: LocationCircles(),
+                    ),
+                  ),
+                ],
               );
 
             default:
-              return spinkit1;
+              return spinkit2;
           }
         },
       ),
@@ -246,4 +242,48 @@ Widget buildFloatingSearchBar(BuildContext context) {
       );
     },
   );
+}
+
+//draws circles and lines
+class LocationCircles extends CustomPainter {
+  //override the paint function with the data and functions to paint
+  @override
+  void paint(Canvas canvas, Size size) {
+    const pointMode = ui.PointMode.polygon; // drawing as a polygon
+    const points = [
+      //the points the line will draw in between
+      // Offset(650, 180), //22
+      // Offset(645, 171), //Y101
+      // Offset(633, 156), //Y102
+      // Offset(635, 170), //W101
+      // Offset(626, 192), //W102
+      // Offset(614, 202), //W103
+      // Offset(607, 218), //W104
+      // Offset(615, 232), //W105
+      // Offset(624, 252), //W106
+      // Offset(622, 260), //W107
+      // Offset(623, 262), //W201
+      // Offset(635, 266), //W301
+      // Offset(650, 254), //57
+      // Offset(651, 269), //24
+      Offset(450, 150), //57
+      Offset(800, 500), //24
+      //Offset(656, 280), //23
+      //Offset(636, 282), //20
+      //Offset(596, 280), //56
+      //Offset(531, 272), //M
+      //Offset(559, 152), //L
+      //Offset(575, 163), //19
+      //Offset(575, 246), //18
+      //Offset(533, 326), //16
+    ];
+    var paint1 = Paint()
+      ..color = const Color.fromARGB(255, 107, 14, 14)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(533, 326), 14, paint1); //draw circle
+    canvas.drawPoints(pointMode, points, paint1); // draw line between points
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

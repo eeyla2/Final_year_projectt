@@ -2,38 +2,37 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:legsfree/constants/route_points_var.dart';
 
 class RoutePointsModel {
-  int? id, location1, location2, points, position, routeID;
+  int? position;
+  String? location1, location2, points, journeyName;
   RoutePointsModel(
-      {this.id,
-      this.location1,
+      {this.location1,
       this.location2,
       this.points,
       this.position,
-      this.routeID});
+      this.journeyName});
   factory RoutePointsModel.fromMap(Map<String, dynamic> json) =>
       RoutePointsModel(
-          id: json[RoutePointsVar.id],
-          location1: json[RoutePointsVar.location1],
-          location2: json[RoutePointsVar.location2],
-          points: json[RoutePointsVar.points],
-          position: json[RoutePointsVar.position],
-          routeID: json[RoutePointsVar.routeId]);
-  Map<String,dynamic> toMap(){
+        location1: json[RoutePointsVar.location1].toString(),
+        location2: json[RoutePointsVar.location2].toString(),
+        points: json[RoutePointsVar.points].toString(),
+        position: json[RoutePointsVar.position] as int,
+        journeyName: json[RoutePointsVar.journeyName].toString(),
+      );
+  Map<String, dynamic> toMap() {
     return {
-      RoutePointsVar.id:id,
-      RoutePointsVar.location1:location1,
-      RoutePointsVar.location2:location2,
-      RoutePointsVar.points:points,
-      RoutePointsVar.position:position,
-      RoutePointsVar.routeId:routeID,
+      RoutePointsVar.location1: location1,
+      RoutePointsVar.location2: location2,
+      RoutePointsVar.points: points,
+      RoutePointsVar.position: position,
+      RoutePointsVar.journeyName: journeyName,
     };
   }
-  RoutePointsModel.fromDocumentSnapshot(DocumentSnapshot doc){
-    id=doc[RoutePointsVar.id];
-    location1=doc[RoutePointsVar.location1];
-    location2=22;
-    points=doc[RoutePointsVar.points];
-    position=doc[RoutePointsVar.position];
-    routeID=doc[RoutePointsVar.routeId];
+
+  RoutePointsModel.fromDocumentSnapshot(DocumentSnapshot doc) {
+    location1 = doc[RoutePointsVar.location1].toString();
+    location2 = doc[RoutePointsVar.location2].toString();
+    points = doc[RoutePointsVar.points].toString();
+    position = doc[RoutePointsVar.position] as int;
+    journeyName = doc[RoutePointsVar.journeyName].toString();
   }
 }
