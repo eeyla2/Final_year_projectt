@@ -7,6 +7,7 @@ import 'package:legsfree/utilities/show_error_dialog.dart';
 //import 'dart:developer' as devtools show log;
 
 import '../constants/routes.dart';
+
 //import 'package:legfree/firebase_options.dart';
 
 class LoginView extends StatefulWidget {
@@ -92,8 +93,8 @@ class _LoginViewState extends State<LoginView> {
                   //user email verified
                   //SchedulerBinding.instance.addPostFrameCallback((_) {
                   Navigator.of(context).pushNamedAndRemoveUntil(
-                    newMapsRoute,
-                    //mapsRoute,
+                    //newMapsRoute,
+                    mapsRoute,
                     (route) => false,
                   );
                   //});

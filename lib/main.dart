@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 //import 'package:legsfree/error_handling/error_handler.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
+import 'package:legsfree/views/maps/double_search_bar._view.dart';
 import 'package:legsfree/views/maps/maps_view.dart';
 import 'package:legsfree/views/maps/new_maps_view.dart';
 import 'package:location/location.dart';
@@ -40,6 +41,7 @@ Future<void> main() async {
           mapsRoute: (context) => const MainView(),
           verifyEmailRoute: (context) => const VerifyEmailView(),
           newMapsRoute: (context) => const NewMapsView(),
+          doubleSearchBarRoute: (context) => const DoubleSearchBarView(),
         }),
   );
 }
@@ -63,8 +65,9 @@ class HomePage extends StatelessWidget {
             if (user != null) {
               if (user.isEmailVerified) {
                 //if user has been entered and email is verified return mainview
-                return const NewMapsView();
-                //MainView();
+                return const
+                    //NewMapsView();
+                    MainView();
               } else {
                 //if not show the verifyemailview page
                 return const VerifyEmailView();

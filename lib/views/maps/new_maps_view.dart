@@ -145,153 +145,154 @@ class _NewMapsViewState extends State<NewMapsView> {
           var weightOfLightestPath = graph.weightAlong(lightestPath);
 
           //the path is only drawn one directionalso it avoids replication which would appear as 0
-          if (weightOfLightestPath != 0) {
-            //for two selectable destinations see if the path exists in database
-            var journeyNameToGetWeight = 'From $startLocation to $destination';
-            // devtools.log('journey name= $journeyNameToGetWeight');
-
-            //try to get the data to see if the route already exists
-            var getMapInfo = await _localDBhelper
-                .getRouteMapsForOneJourney(journeyNameToGetWeight);
-
-            //get the route points for this journey
-            var getPointsInfo = await _localDBhelper
-                .getRoutePointsForOneJourney(journeyNameToGetWeight);
-
-            updateRoutePoints(List item) async {
-              int counter = 0;
-              for (int y = 0; y < item.length; ++y) {
-                //updating the journey weight
-                getPointsInfo[y].points = lightestPath[counter];
-
-                //storing it in a variable
-                var updatedPoints = getPointsInfo[y];
-
-                // devtools.log(
-                //     'points of lightest path from the database= ${updatedPoints.points}');
-                //updating
-                var updateWeightCount =
-                    await _localDBhelper.updateRoutePoints(updatedPoints);
-
-                counter++;
-              }
-              return counter;
-            }
-
-            //if data exists update it
-            if (getMapInfo.isNotEmpty) {
-              devtools.log(' lightest path= $lightestPath');
-              devtools.log(' lightest path= ${lightestPath.length}');
-              int counterOutsideLoop = 0;
-              //int counter =0;
-              if (lightestPath.length == getPointsInfo.length) {
-                //implement the function updateRoutePoints
-                updateRoutePoints(getPointsInfo);
-              } else if (lightestPath.length > getPointsInfo.length) {
-                //countinue the counter outside the loop after done updating exisiting loops
-                counterOutsideLoop = await updateRoutePoints(getPointsInfo);
-
-                // devtools.log(' count outside of loop= $counterOutsideLoop');
-                // devtools.log(' count outside of loop= $counterOutsideLoop');
-                //devtools.log(
-                //  'count outside of loop= ${lightestPath.length - counterOutsideLoop}');
-                devtools.log('here bro');
-                int addedCounter = 0;
-                for (int t = counterOutsideLoop;
-                    t < (lightestPath.length - getPointsInfo.length);
-                    ++t) {
-                  devtools.log('here');
-                  //create a New point in between
-                  RoutePointsModel updateRouteWithNewPointsInBetween =
-                      RoutePointsModel(
-                          location1: selectableDestinations[j],
-                          location2: selectableDestinations[i],
-                          points: lightestPath[counterOutsideLoop],
-                          position: (counterOutsideLoop + 1),
-                          journeyName: journeyNameToGetWeight);
-                  devtools.log('here');
-                  //implement the new point into the local database
-                  var addedRoutePoint =
-                      await _localDBhelper.addRoutePointsDataInLocalDB(
-                          updateRouteWithNewPointsInBetween);
-                  addedCounter += addedRoutePoint;
-                  devtools.log('here');
-                  devtools.log('count of added route points = $addedCounter');
-                  counterOutsideLoop++;
-                  //increase counter
-                }
-              } else if (lightestPath.length < getPointsInfo.length) {
-                //continue counter outside loop after done updating existing loops
-                counterOutsideLoop = await updateRoutePoints(lightestPath);
-                int deletedCounter = 0;
-
-                for (int t = 0;
-                    t < (getMapInfo.length - lightestPath.length);
-                    ++t) {
-                  //delet the rest of the points.
-                  var deletedRoutePoint = await _localDBhelper
-                      .deleteRoutePoints(getPointsInfo[counterOutsideLoop]);
-
-                  deletedCounter += deletedRoutePoint;
-                  devtools
-                      .log(' count of deleted route points = $deletedCounter');
-                  counterOutsideLoop++;
-                }
-              }
-              //}
-              for (int t = 0; t < getMapInfo.length; ++t) {
-                // devtools.log(
-                //     'weight of lightest path from the database= ${getMapInfo[t].totalWeight}');
-                //updating the journey weight
-                getMapInfo[t].totalWeight = weightOfLightestPath;
-                //storing it in a variable
-                var updatedWeight = getMapInfo[t];
-                //updating
-                var updateWeightCount =
-                    await _localDBhelper.updateRouteMap(updatedWeight);
-                //  devtools.log(
-                //      'weight of lightest path from the database= ${getWeight[t].totalWeight!}');
-                // devtools.log(
-                //     'updated weight count from the database= $updateWeightCount');
-              }
-            }
-
-            if (getMapInfo.isEmpty) {
-              //add route if it does not exist in database
-              RouteMapModel newRoute = RouteMapModel(
-                location1: selectableDestinations[j],
-                location2: selectableDestinations[i],
-                weightClass: 1,
-                totalWeight: weightOfLightestPath,
-                isKnown: 1,
-                journeyName: journeyNameToGetWeight,
-                mapName: 'nothing',
-                maps: 'none yet',
-              );
-              var addedRoutes =
-                  await _localDBhelper.addRouteMapDataInLocalDB(newRoute);
-
-              devtools.log('added route count from the database= $addedRoutes');
-              // MAYBBE SET A COUNTER FOR THE ROUTESSSS
-            }
-          } else {
-            //swap the start and ending destination
+          if (weightOfLightestPath == 0) {
             String transition = '';
             transition = startLocation;
             startLocation = destination;
             destination = transition;
 
             //calculat6e lightesdt weight and lightestPath
-            var lightestPath = graph.lightestPath(startLocation, destination);
-            var weightOfLightestPath = graph.weightAlong(lightestPath);
-            devtools.log('skipped to avoid repitition');
+            lightestPath = graph.lightestPath(startLocation, destination);
+            weightOfLightestPath = graph.weightAlong(lightestPath);
           }
-        }
 
-        if (selectableDestinations[j] == selectableDestinations[i]) {
-          devtools.log(
-              'skipped as the destination and starting location are the same');
+          //for two selectable destinations see if the path exists in database
+          var journeyNameToGetWeight = 'From $startLocation to $destination';
+          devtools.log('journey name= $journeyNameToGetWeight');
+
+          //try to get the data to see if the route already exists
+          var getMapInfo = await _localDBhelper
+              .getRouteMapsForOneJourney(journeyNameToGetWeight);
+
+          //get the route points for this journey
+          var getPointsInfo = await _localDBhelper
+              .getRoutePointsForOneJourney(journeyNameToGetWeight);
+
+          updateRoutePoints(List item) async {
+            int counter = 0;
+            for (int y = 0; y < item.length; ++y) {
+              //updating the journey weight
+              getPointsInfo[y].points = lightestPath[counter];
+
+              //storing it in a variable
+              var updatedPoints = getPointsInfo[y];
+
+              // devtools.log(
+              //     'points of lightest path from the database= ${updatedPoints.points}');
+              //updating
+              var updateWeightCount =
+                  await _localDBhelper.updateRoutePoints(updatedPoints);
+
+              counter++;
+            }
+            return counter;
+          }
+
+          //if data exists update it
+          if (getMapInfo.isNotEmpty) {
+            devtools.log(' lightest path= $lightestPath');
+            devtools.log(' lightest path length= ${lightestPath.length}');
+            int counterOutsideLoop = 0;
+            //int counter =0;
+            if (lightestPath.length == getPointsInfo.length) {
+              //implement the function updateRoutePoints
+              updateRoutePoints(getPointsInfo);
+            } else if (lightestPath.length > getPointsInfo.length) {
+              //countinue the counter outside the loop after done updating exisiting loops
+              counterOutsideLoop = await updateRoutePoints(getPointsInfo);
+
+              // devtools.log(' count outside of loop= $counterOutsideLoop');
+              // devtools.log(' count outside of loop= $counterOutsideLoop');
+              //devtools.log(
+              //  'count outside of loop= ${lightestPath.length - counterOutsideLoop}');
+              devtools.log('here bro');
+              int addedCounter = 0;
+              for (int t = counterOutsideLoop;
+                  t < (lightestPath.length - getPointsInfo.length);
+                  ++t) {
+                devtools.log('here');
+                //create a New point in between
+                RoutePointsModel updateRouteWithNewPointsInBetween =
+                    RoutePointsModel(
+                        location1: selectableDestinations[j],
+                        location2: selectableDestinations[i],
+                        points: lightestPath[counterOutsideLoop],
+                        position: (counterOutsideLoop + 1),
+                        journeyName: journeyNameToGetWeight);
+                devtools.log('here');
+                //implement the new point into the local database
+                var addedRoutePoint =
+                    await _localDBhelper.addRoutePointsDataInLocalDB(
+                        updateRouteWithNewPointsInBetween);
+                addedCounter += addedRoutePoint;
+                devtools.log('here');
+                devtools.log('count of added route points = $addedCounter');
+                counterOutsideLoop++;
+                //increase counter
+              }
+            } else if (lightestPath.length < getPointsInfo.length) {
+              //continue counter outside loop after done updating existing loops
+              counterOutsideLoop = await updateRoutePoints(lightestPath);
+              int deletedCounter = 0;
+
+              for (int t = 0;
+                  t < (getMapInfo.length - lightestPath.length);
+                  ++t) {
+                //delet the rest of the points.
+                var deletedRoutePoint = await _localDBhelper
+                    .deleteRoutePoints(getPointsInfo[counterOutsideLoop]);
+
+                deletedCounter += deletedRoutePoint;
+                devtools
+                    .log(' count of deleted route points = $deletedCounter');
+                counterOutsideLoop++;
+              }
+            }
+            //}
+            for (int t = 0; t < getMapInfo.length; ++t) {
+              // devtools.log(
+              //     'weight of lightest path from the database= ${getMapInfo[t].totalWeight}');
+              //updating the journey weight
+              getMapInfo[t].totalWeight = weightOfLightestPath;
+              //storing it in a variable
+              var updatedWeight = getMapInfo[t];
+              //updating
+              var updateWeightCount =
+                  await _localDBhelper.updateRouteMap(updatedWeight);
+              //  devtools.log(
+              //      'weight of lightest path from the database= ${getWeight[t].totalWeight!}');
+              // devtools.log(
+              //     'updated weight count from the database= $updateWeightCount');
+            }
+          }
+
+          if (getMapInfo.isEmpty) {
+            //add route if it does not exist in database
+            RouteMapModel newRoute = RouteMapModel(
+              location1: selectableDestinations[j],
+              location2: selectableDestinations[i],
+              weightClass: 1,
+              totalWeight: weightOfLightestPath,
+              isKnown: 1,
+              journeyName: journeyNameToGetWeight,
+              mapName: 'nothing',
+              maps: 'none yet',
+            );
+            var addedRoutes =
+                await _localDBhelper.addRouteMapDataInLocalDB(newRoute);
+
+            devtools.log('added route count from the database= $addedRoutes');
+            // MAYBBE SET A COUNTER FOR THE ROUTESSSS
+          }
+          //////////////////else {
+          //swap the start and ending destination
+          devtools.log('skipped to avoid repitition');
         }
+      }
+
+      if (startLocation == destination) {
+        devtools.log(
+            'skipped as the destination and starting location are the same');
       }
     }
   }
