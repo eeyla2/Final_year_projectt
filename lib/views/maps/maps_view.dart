@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 import 'package:legsfree/services/crud/main_services.dart';
+import 'package:legsfree/views/maps/double_search_bar._view.dart';
 import 'dart:developer' as devtools show log;
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -131,82 +132,109 @@ class _MainViewState extends State<MainView> {
     return Scaffold(
       resizeToAvoidBottomInset:
           false, //helps change the gadegst to fit in case other widgets appear
-      appBar: AppBar(
-        title: const Text(
-            'Main Page'), // have to change it so that it is at the bottom and has gadgets
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.route_outlined),
-          ),
-          PopupMenuButton<MenuAction>(
-            onSelected: (value) async {
-              switch (value) {
-                case MenuAction.logout:
-                  final shouldLogout = await showLogOutDialog(context);
-                  if (shouldLogout) {
-                    await AuthService.firebase().logOut();
-                    // Wrap Navigator with SchedulerBinding to wait for rendering state before navigating
-                    SchedulerBinding.instance.addPostFrameCallback((_) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        loginRoute,
-                        (_) => false,
-                      );
-                    });
-                  }
-              }
-            },
-            itemBuilder: (context) {
-              return const [
-                PopupMenuItem<MenuAction>(
-                  value: MenuAction.logout,
-                  child: Text(' Logout'),
-                ),
-              ];
-            },
-          )
-        ],
-      ),
+      backgroundColor: Colors.white,
       body: FutureBuilder(
         future: _mainService.getOrCreateUser(theemail: userEmail),
         builder: (context, snapshot) {
           switch (snapshot.connectionState) {
             case ConnectionState.done:
-              return Stack(
-                children: <Widget>[
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    //scroll widget
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 1,
-                      child: Image.asset(
-                        //loads an image on to the app
-                        'images/map.png',
-                        fit: BoxFit.cover,
+              return Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Stack(
+                  children: <Widget>[
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      //scroll widget
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 40.0),
+                        child: SizedBox(
+                          height: MediaQuery.of(context).size.height * 1,
+                          child: Image.asset(
+                            //loads an image on to the app
+                            'images/map.png',
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 500,
-                    height: 60,
-                    child: CustomPaint(
-                      //paint
-                      painter: LocationCircles(),
+                    SizedBox(
+                      width: 500,
+                      height: 60,
+                      child: CustomPaint(
+                        //paint
+                        painter: LocationCircles(),
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 500,
-                    height: 60,
-                    //color: Colors.green,
-                    child: buildFloatingSearchBar(context),
-                  ),
-                ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SizedBox(
+                        width: 500,
+                        height: 60,
+                        child: buildFloatingSearchBar(context),
+                      ),
+                    ),
+                  ],
+                ),
               );
 
             default:
               return spinkit2;
           }
         },
+      ),
+      bottomNavigationBar: Container(
+        height: MediaQuery.of(context).size.height * 0.14,
+        width: MediaQuery.of(context).size.width * 0.1,
+        padding: const EdgeInsets.only(
+          top: 32,
+          left: 15,
+          right: 15,
+          bottom: 32,
+        ),
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(36.0),
+            topRight: Radius.circular(36.0),
+          ),
+          color: ui.Color.fromARGB(255, 102, 56, 163),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.bike_scooter_sharp,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.explore_outlined,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.add_sharp,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.settings_suggest_outlined,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -224,7 +252,7 @@ class _MainViewState extends State<MainView> {
       //all the characterstics of searchh bar
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
-      transitionCurve: Curves.easeInOut,
+      transitionCurve: Curves.easeInCirc,
       physics: const BouncingScrollPhysics(),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
@@ -250,24 +278,53 @@ class _MainViewState extends State<MainView> {
       // },
       onFocusChanged: (isFocused) {
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
+          Navigator.of(context).pushNamed(
             doubleSearchBarRoute,
-            (route) => false,
           );
+          //FocusManager.instance.primaryFocus?.unfocus();
         });
       },
+
       // Specify a custom transition to be used for
       // animating between opened and closed stated.
       transition: CircularFloatingSearchBarTransition(),
       actions: [
-        //implementation of the place icon in the search bar when it's pressed
-        // FloatingSearchBarAction(
-        //   showIfOpened: false,
-        //   child: CircularButton(
-        //     icon: const Icon(Icons.search),
-        //     onPressed: () {},
-        //   ),
-        // ),
+        //implementation of a popupmenu
+        PopupMenuButton<MenuAction>(
+          onSelected: (value) async {
+            switch (value) {
+              case MenuAction.logout:
+                final shouldLogout = await showLogOutDialog(context);
+                if (shouldLogout) {
+                  await AuthService.firebase().logOut();
+                  // Wrap Navigator with SchedulerBinding to wait for rendering state before navigating
+                  SchedulerBinding.instance.addPostFrameCallback((_) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      loginRoute,
+                      (_) => false,
+                    );
+                  });
+                }
+            }
+          },
+          itemBuilder: (context) {
+            return const [
+              PopupMenuItem<MenuAction>(
+                value: MenuAction.logout,
+                child: Text(' Logout'),
+              ),
+            ];
+          },
+        ),
+        FloatingSearchBarAction(
+          showIfOpened: false,
+          child: CircularButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              searchController.open();
+            },
+          ),
+        ),
         FloatingSearchBarAction.searchToClear(
           showIfClosed: false,
         ),
@@ -285,99 +342,7 @@ class _MainViewState extends State<MainView> {
                   child: Text('',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.headlineSmall)
-                  //child: Column(
-                  //mainAxisSize: MainAxisSize.min,
-                  // children: filteredSearchSuggestions
-                  //     .map(
-                  //       (term) => ListTile(
-                  //         title: Text(
-                  //           term,
-                  //           maxLines: 1,
-                  //           overflow: TextOverflow.ellipsis,
-                  //         ),
-                  //         // leading: const Icon(Icons.history),
-                  //         // trailing: IconButton(
-                  //         //   icon: const Icon(Icons.clear),
-
-                  //         //   onPressed: () {
-                  //         //     setState(() {
-                  //         //       //deleteSearchTerm(term);
-                  //         //       searchController.clear();
-                  //         //     });
-                  //         //   },
-                  //         // ),
-                  //         onTap: () {
-                  //           setState(() {
-                  //             putSearchTermFirst(term);
-                  //             selectedTerm = term;
-                  //           });
-                  //           searchController.close();
-                  //         },
-                  //       ),
-                  //     )
-                  //     .toList(),
-                  //)
-
-                  // child: Builder(
-                  //   builder: (context) {
-                  //     if (filteredSearchSuggestions.isEmpty &&
-                  //         searchController.query.isEmpty) {
-                  //       return Container(
-                  //           height: 56,
-                  //           width: double.infinity,
-                  //           alignment: Alignment.center,
-                  //           child: Text('',
-                  //               maxLines: 1,
-                  //               overflow: TextOverflow.ellipsis,
-                  //               style: Theme.of(context).textTheme.headlineSmall));
-                  //     } else if (filteredSearchSuggestions.isEmpty) {
-                  //       return ListTile(
-                  //         title: Text(searchController.query),
-                  //         leading: const Icon(Icons.search),
-                  //         onTap: () {
-                  //           setState(() {
-                  //             searching(searchController.query);
-                  //             selectedTerm = searchController.query;
-                  //           });
-                  //           searchController.close();
-                  //         },
-                  //       );
-                  //     } else {
-                  //       return Column(
-                  //         mainAxisSize: MainAxisSize.min,
-                  //         children: filteredSearchSuggestions
-                  //             .map(
-                  //               (term) => ListTile(
-                  //                 title: Text(
-                  //                   term,
-                  //                   maxLines: 1,
-                  //                   overflow: TextOverflow.ellipsis,
-                  //                 ),
-                  //                 leading: const Icon(Icons.history),
-                  //                 trailing: IconButton(
-                  //                   icon: const Icon(Icons.clear),
-                  //                   onPressed: () {
-                  //                     setState(() {
-                  //                       deleteSearchTerm(term);
-                  //                     });
-                  //                   },
-                  //                 ),
-                  //                 onTap: () {
-                  //                   setState(() {
-                  //                     putSearchTermFirst(term);
-                  //                     selectedTerm = term;
-                  //                   });
-                  //                   searchController.close();
-                  //                 },
-                  //               ),
-                  //             )
-                  //             .toList(),
-                  //       );
-                  //     }
-                  //   },
-                  // ),
-                  ),
+                      style: Theme.of(context).textTheme.headlineSmall)),
             ));
       }, //builder
     );

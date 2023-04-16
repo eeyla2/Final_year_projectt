@@ -52,35 +52,37 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      //initializes application for the currentplatform in use
-      //initiallization process
-      future: AuthService.firebase().initialize(),
-      builder: (context, snapshot) {
-        //builds once app is initialized
-        //connection
-        switch (snapshot.connectionState) {
-          case ConnectionState.done: //if connected successfully
-            final user = AuthService.firebase().currentUser;
-            if (user != null) {
-              if (user.isEmailVerified) {
-                //if user has been entered and email is verified return mainview
-                return const
-                    //NewMapsView();
-                    MainView();
+    return SafeArea(
+      child: FutureBuilder(
+        //initializes application for the currentplatform in use
+        //initiallization process
+        future: AuthService.firebase().initialize(),
+        builder: (context, snapshot) {
+          //builds once app is initialized
+          //connection
+          switch (snapshot.connectionState) {
+            case ConnectionState.done: //if connected successfully
+              final user = AuthService.firebase().currentUser;
+              if (user != null) {
+                if (user.isEmailVerified) {
+                  //if user has been entered and email is verified return mainview
+                  return const
+                      //NewMapsView();
+                      MainView();
+                } else {
+                  //if not show the verifyemailview page
+                  return const VerifyEmailView();
+                }
               } else {
-                //if not show the verifyemailview page
-                return const VerifyEmailView();
+                //if user not entered show loginview and from there you can go to registerview if you want
+                return const LoginView();
               }
-            } else {
-              //if user not entered show loginview and from there you can go to registerview if you want
-              return const LoginView();
-            }
-          //return const Text('done');
-          default: //in all other cases
-            return const CircularProgressIndicator(); //if the app is not connected yet show a circular indicator
-        }
-      },
+            //return const Text('done');
+            default: //in all other cases
+              return const CircularProgressIndicator(); //if the app is not connected yet show a circular indicator
+          }
+        },
+      ),
     );
   }
 }
