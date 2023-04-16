@@ -156,30 +156,64 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //appBar: AppBar(),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Expanded(
-            child: Container(
-              height: double.infinity,
-              width:
-                  500.0, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-              color: const Color.fromARGB(255, 54, 184, 244),
-              child: buildFloatingSearchBarStartLocation(context),
-            ),
-          ),
-          // Expanded(
-          //   child: Container(
-          //     height: double.infinity,
-          //     width:
-          //         500.0, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-          //     color: const Color.fromARGB(255, 54, 184, 244),
-          //     child: buildFloatingSearchBarDestination(context),
-          //   ),
-          // ),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(150),
+        child: AppBar(
+          toolbarHeight: 150,
+          actions: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: <Widget>[
+                Expanded(
+                  child: Container(
+                    height: double.infinity,
+                    width: MediaQuery.of(context).size.height *
+                        0.5, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+                    color: const Color.fromARGB(255, 54, 184, 244),
+                    child: buildFloatingSearchBarStartLocation(context),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    height: double.infinity,
+                    width: MediaQuery.of(context).size.height *
+                        0.5, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+                    color: const Color.fromARGB(255, 54, 184, 244),
+                    child: buildFloatingSearchBarDestination(context),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
       ),
+      body: isSubmitted
+          ? SearchResultsListView(searchTerm: selectedTermStarting)
+          : const SearchResultsListView(searchTerm: null),
+
+      // body: Column(
+      //   mainAxisAlignment: MainAxisAlignment.end,
+      //   children: [
+      //     Expanded(
+      //       child: Container(
+      //         height: double.infinity,
+      //         width:
+      //             500.0, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+      //         color: const Color.fromARGB(255, 54, 184, 244),
+      //         child: buildFloatingSearchBarStartLocation(context),
+      //       ),
+      //     ),
+      //     // Expanded(
+      //     //   child: Container(
+      //     //     height: double.infinity,
+      //     //     width:
+      //     //         500.0, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+      //     //     color: const Color.fromARGB(255, 54, 184, 244),
+      //     //     child: buildFloatingSearchBarDestination(context),
+      //     //   ),
+      //     // ),
+      //   ],
+      // ),
     );
   }
 
@@ -192,7 +226,7 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
 
 //return a floating search bar
     return FloatingSearchBar(
-      hint: 'Search destination', // text shown inside search bar
+      hint: 'Search start location', // text shown inside search bar
       //all the characterstics of searchh bar
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
@@ -200,8 +234,11 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
       physics: const BouncingScrollPhysics(),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
-      width: isPortrait ? 600 : 500,
+      width: MediaQuery.of(context).size.height * 0.5,
+      borderRadius: BorderRadius.circular(8),
+      //isPortrait ? 600 : 500,
       //height: double.infinity,
+      closeOnBackdropTap: true,
       debounceDelay: const Duration(milliseconds: 500),
       clearQueryOnClose: true, //check this again when needed
       controller: searchControllerStarting,
@@ -223,9 +260,9 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
         searchControllerStarting.close;
         searchControllerDestination.open();
       },
-      body: isSubmitted
-          ? SearchResultsListView(searchTerm: selectedTermStarting)
-          : SearchResultsListView(searchTerm: null),
+      // body: isSubmitted
+      //     ? SearchResultsListView(searchTerm: selectedTermStarting)
+      //     : const SearchResultsListView(searchTerm: null),
       // Specify a custom transition to be used for
       // animating between opened and closed stated.
       transition: CircularFloatingSearchBarTransition(),
@@ -312,15 +349,16 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
       width: isPortrait ? 600 : 500,
+      borderRadius: BorderRadius.circular(8),
       //height: double.infinity,
       debounceDelay: const Duration(milliseconds: 500),
       clearQueryOnClose: true, //check this again when needed
       controller: searchControllerDestination,
       onQueryChanged: (query) {
         setState(() {
-          searchControllerDestination.open();
-          filteredSearchSuggestionsDestination =
-              filteredSearchTermDestination(filter: query);
+          // searchControllerDestination.open();
+          // filteredSearchSuggestionsDestination =
+          //     filteredSearchTermDestination(filter: query);
         });
         // Call your model, bloc, controller here.
       },
@@ -328,9 +366,9 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
       onSubmitted: (query) {
         setState(() {
           //addSearchTerm(query);
-          selectedTermDestination = query;
+          // selectedTermDestination = query;
         });
-        searchControllerDestination.close;
+        // searchControllerDestination.close;
       },
 
       // onFocusChanged: (isFocused) {
@@ -361,58 +399,44 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
             elevation: 4.0,
             child: Builder(
               builder: (context) {
-                if (filteredSearchSuggestionsDestination.isEmpty &&
-                    searchControllerDestination.query.isEmpty) {
-                  return Container(
-                    height: 56,
-                    width: double.infinity,
-                    alignment: Alignment.center,
-                    child: Text('',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.headlineSmall),
-                  );
-                } else if (filteredSearchSuggestionsDestination.isEmpty) {
+                if (filteredSearchSuggestionsStarting.isEmpty &&
+                    searchControllerStarting.query.isEmpty) {
+                  //return empty widget
+                  return nil;
+                }
+                //when the result does not match anything from the list
+                else if (filteredSearchSuggestionsStarting.isEmpty) {
+                  //display what ever is being typed
                   return ListTile(
-                    title: Text(searchControllerDestination.query),
+                    title: Text(searchControllerStarting.query),
                     leading: const Icon(Icons.search),
                     onTap: () {
                       setState(() {
-                        // addSearchTermDestination(
-                        //     searchControllerDestination.query);
-                        // selectedTermDestination =
-                        //     searchControllerDestination.query;
+                        addSearchTermStarting(searchControllerStarting.query);
+                        selectedTermStarting = searchControllerStarting.query;
                       });
-                      // searchControllerDestination.close();
+                      searchControllerStarting.close();
                     },
                   );
                 } else {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: filteredSearchSuggestionsDestination
+                    children: filteredSearchSuggestionsStarting
                         .map(
                           (term) => ListTile(
+                            //display drop down list tiles
                             title: Text(
                               term,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             leading: const Icon(Icons.history),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  //deleteSearchTerm(term);
-                                  // searchControllerDestination.close();
-                                });
-                              },
-                            ),
                             onTap: () {
                               setState(() {
-                                // putSearchTermFirstDestination(term);
-                                // selectedTermDestination = term;
+                                putSearchTermFirstStarting(term);
+                                selectedTermStarting = term;
                               });
-                              // searchControllerDestination.close();
+                              searchControllerStarting.close();
                             },
                           ),
                         )
@@ -471,3 +495,6 @@ class SearchResultsListView extends StatelessWidget {
     );
   }
 }
+// searchTerm?.isEmpty ?? true
+//               ? const Text('University Park Campus')
+//               : const Text(''),

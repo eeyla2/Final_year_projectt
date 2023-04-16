@@ -261,6 +261,7 @@ class _MainViewState extends State<MainView> {
       debounceDelay: const Duration(milliseconds: 500),
       clearQueryOnClose: true, //check this again when needed
       controller: searchController,
+      borderRadius: BorderRadius.circular(15),
       onQueryChanged: (query) {
         // setState(() {
         //   searchController.open();
@@ -278,8 +279,9 @@ class _MainViewState extends State<MainView> {
       // },
       onFocusChanged: (isFocused) {
         SchedulerBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushNamed(
+          Navigator.of(context).pushNamedAndRemoveUntil(
             doubleSearchBarRoute,
+            (_) => false,
           );
           //FocusManager.instance.primaryFocus?.unfocus();
         });
