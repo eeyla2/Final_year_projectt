@@ -5,7 +5,11 @@ class NodesModel {
   int? isSelectable, x, y;
   String? name;
 
-  NodesModel({this.isSelectable, this.x, this.name, this.y});
+  NodesModel(
+      {required this.isSelectable,
+      required this.x,
+      required this.name,
+      required this.y});
 
   factory NodesModel.fromMap(Map<String, dynamic> json) => NodesModel(
         isSelectable: json[NodesVar.isSelectable],

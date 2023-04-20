@@ -1,17 +1,17 @@
 //mainview widget
 import 'dart:ui' as ui;
-import 'dart:async';
+//import 'dart:async';
 //import 'dart:math';
 
 //import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
+//import 'package:connectivity_plus/connectivity_plus.dart';
 //import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+//import 'package:flutter/services.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 import 'package:legsfree/services/crud/main_services.dart';
-import 'package:legsfree/views/maps/double_search_bar._view.dart';
-import 'dart:developer' as devtools show log;
+//import 'package:legsfree/views/maps/double_search_bar._view.dart';
+//import 'dart:developer' as devtools show log;
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter/scheduler.dart';
@@ -157,20 +157,25 @@ class _MainViewState extends State<MainView> {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: 500,
-                      height: 60,
-                      child: CustomPaint(
-                        //paint
-                        painter: LocationCircles(),
-                      ),
-                    ),
                     SingleChildScrollView(
                       scrollDirection: Axis.vertical,
                       child: SizedBox(
-                        width: 500,
-                        height: 60,
+                        width: MediaQuery.of(context).size.width * 0.95,
+                        height: MediaQuery.of(context).size.height * 0.14,
                         child: buildFloatingSearchBar(context),
+                      ),
+                    ),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.5,
+                        height: MediaQuery.of(context).size.height * 0.5,
+
+                        //MediaQuery.of(context).size
+                        child: CustomPaint(
+                          size: MediaQuery.of(context).size,
+                          painter: LocationCircles(),
+                        ),
                       ),
                     ),
                   ],
@@ -248,7 +253,7 @@ class _MainViewState extends State<MainView> {
 
     //return a floating search bar
     return FloatingSearchBar(
-      hint: 'Search destination', // text shown inside search bar
+      hint: 'Get To Your Class...', // text shown inside search bar
       //all the characterstics of searchh bar
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
@@ -392,7 +397,7 @@ class SearchResultsListView extends StatelessWidget {
       );
     }
 
-    final fsb = FloatingSearchBar.of(context);
+    //final fsb = FloatingSearchBar.of(context);
 
     return ListView(
       //padding: EdgeInsets.only(top: fsb.height +fsb.margins.vertical),
@@ -415,22 +420,23 @@ class LocationCircles extends CustomPainter {
     const pointMode = ui.PointMode.polygon; // drawing as a polygon
     const points = [
       //the points the line will draw in between
-      // Offset(650, 180), //22
-      // Offset(645, 171), //Y101
-      // Offset(633, 156), //Y102
-      // Offset(635, 170), //W101
-      // Offset(626, 192), //W102
-      // Offset(614, 202), //W103
-      // Offset(607, 218), //W104
-      // Offset(615, 232), //W105
-      // Offset(624, 252), //W106
-      // Offset(622, 260), //W107
-      // Offset(623, 262), //W201
-      // Offset(635, 266), //W301
-      // Offset(650, 254), //57
-      // Offset(651, 269), //24
+      Offset(650, 180), //22
+      Offset(645, 171), //Y101
+      Offset(633, 156), //Y102
+      Offset(635, 170), //W101
+      Offset(626, 192), //W102
+      Offset(614, 202), //W103
+      Offset(607, 218), //W104
+      Offset(615, 232), //W105
+      Offset(624, 252), //W106
+      Offset(622, 260), //W107
+      Offset(623, 262), //W201
+      Offset(635, 266), //W301
+      Offset(650, 254), //57
+      Offset(651, 269), //24
       Offset(450, 150), //57
       Offset(800, 500), //24
+      Offset(200, 100),
       //Offset(656, 280), //23
       //Offset(636, 282), //20
       //Offset(596, 280), //56
@@ -444,9 +450,34 @@ class LocationCircles extends CustomPainter {
       ..color = const Color.fromARGB(255, 107, 14, 14)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(const Offset(533, 326), 14, paint1); //draw circle
+    canvas.drawCircle(const Offset(200, 100), 14, paint1); //draw circle
     canvas.drawPoints(pointMode, points, paint1); // draw line between points
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+// class LocationCircles extends CustomPainter {
+//   //override the paint function with the data and functions to paint
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     const pointMode = ui.PointMode.polygon; // drawing as a polygon
+//     const points = [
+//       //the points the line will drawe in between
+//       Offset(50, 100),
+//       Offset(150, 75),
+//       Offset(250, 250),
+//       Offset(130, 200),
+//       Offset(270, 100),
+//     ];
+//     var paint1 = Paint()
+//       ..color = const Color.fromARGB(255, 107, 14, 14)
+//       ..style = PaintingStyle.fill;
+//     canvas.drawCircle(const Offset(200, 100), 5, paint1);
+//     canvas.drawCircle(const Offset(200, 100), 5, paint1); //draw circle
+//     canvas.drawPoints(pointMode, points, paint1); // draw line between points
+//   }
+
+//   @override
+//   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+// }

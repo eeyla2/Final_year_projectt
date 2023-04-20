@@ -8,14 +8,14 @@ class RouteMapModel {
   String? journeyName, mapName, location1, location2, maps;
   //constructor
   RouteMapModel(
-      {this.isKnown,
-      this.journeyName,
-      this.location1,
-      this.location2,
-      this.mapName,
-      this.maps,
-      this.totalWeight,
-      this.weightClass});
+      {required this.isKnown,
+      required this.journeyName,
+      required this.location1,
+      required this.location2,
+      required this.mapName,
+      required this.maps,
+      required this.totalWeight,
+      required this.weightClass});
   //named second constructor
   // RouteMapModel.routeWeight({
   //   required String startLocation,

@@ -66,9 +66,8 @@ class HomePage extends StatelessWidget {
               if (user != null) {
                 if (user.isEmailVerified) {
                   //if user has been entered and email is verified return mainview
-                  return const
-                      //NewMapsView();
-                      MainView();
+                  return const NewMapsView();
+                  // MainView();
                 } else {
                   //if not show the verifyemailview page
                   return const VerifyEmailView();

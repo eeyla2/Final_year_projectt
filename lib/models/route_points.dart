@@ -5,11 +5,11 @@ class RoutePointsModel {
   int? position;
   String? location1, location2, points, journeyName;
   RoutePointsModel(
-      {this.location1,
-      this.location2,
-      this.points,
-      this.position,
-      this.journeyName});
+      {required this.location1,
+      required this.location2,
+      required this.points,
+      required this.position,
+      required this.journeyName});
   factory RoutePointsModel.fromMap(Map<String, dynamic> json) =>
       RoutePointsModel(
         location1: json[RoutePointsVar.location1].toString(),

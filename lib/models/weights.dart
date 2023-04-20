@@ -5,10 +5,10 @@ class WeightsModel {
   String? node1, node2;
   int? weight, weightClass;
   WeightsModel({
-    this.node1,
-    this.node2,
-    this.weight,
-    this.weightClass,
+    required this.node1,
+    required this.node2,
+    required this.weight,
+    required this.weightClass,
   });
   factory WeightsModel.fromMap(Map<String, dynamic> json) => WeightsModel(
         node1: json[WeightVar.node1],

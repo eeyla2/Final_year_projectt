@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/src/widgets/framework.dart';
-import 'package:flutter/src/widgets/placeholder.dart';
+// import 'package:flutter/src/widgets/framework.dart';
+// import 'package:flutter/src/widgets/placeholder.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:nil/nil.dart';
 
@@ -29,14 +29,39 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
   String? selectedTermStarting = '';
   late List<String> searchSuggestionsStarting = [];
   static const historyLengthStarting = 5;
-  late bool isSubmitted;
+  late bool isSubmittedStartingBar;
+  late bool isTappedStartingTiles;
   //variables for the Destination search bar
   late FloatingSearchBarController searchControllerDestination;
   List<String> filteredSearchSuggestionsDestination = [];
   String? selectedTermDestination = '';
   late List<String> searchSuggestionsDestination = [];
   static const historyLengthDestination = 5;
+  late bool isSubmittedDestinationBar;
+  late bool isTappedDestinationTiles;
 
+  late int number;
+
+  late bool nothingDoneYet = ((isSubmittedStartingBar == false) &&
+      (isTappedStartingTiles == false) &&
+      (isSubmittedDestinationBar == false) &&
+      (isTappedDestinationTiles == false));
+  late bool startLocationSearchChosen = ((isSubmittedStartingBar == true) &&
+      (isTappedStartingTiles == false) &&
+      (isSubmittedDestinationBar == false) &&
+      (isTappedDestinationTiles == false));
+  late bool startTileChosen = ((isSubmittedStartingBar == true) &&
+      (isTappedStartingTiles == true) &&
+      (isSubmittedDestinationBar == false) &&
+      (isTappedDestinationTiles == false));
+  late bool destinationChosen = ((isSubmittedStartingBar == true) &&
+      (isTappedStartingTiles == true) &&
+      (isSubmittedDestinationBar == true) &&
+      (isTappedDestinationTiles == false));
+  late bool destinationTileChosen = ((isSubmittedStartingBar == true) &&
+      (isTappedStartingTiles == true) &&
+      (isSubmittedDestinationBar == true) &&
+      (isTappedDestinationTiles == true));
   //get nodes
   getAllNodes() async {
     allNodes = await _localDBhelper.getNodes();
@@ -93,6 +118,73 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
     addSearchTermStarting(term);
   }
 
+  listViewSearchStarting() {
+    int? listLength = filteredSearchSuggestionsStarting.length;
+    return ListView(
+      //padding: EdgeInsets.only(top: fsb.height +fsb.margins.vertical),
+      children: List.generate(
+        listLength,
+        growable: true,
+        (index) => ListTile(
+          title: Text(filteredSearchSuggestionsStarting[index]),
+          subtitle: const Text('University Park Campus'),
+          onTap: () {
+            setState(() {
+              isTappedStartingTiles = true;
+            });
+            //searchControllerDestination.open();
+          },
+        ),
+      ),
+    );
+  }
+
+  listViewSearchDestination() {
+    int? listLength = filteredSearchSuggestionsDestination.length;
+    return ListView(
+      //padding: EdgeInsets.only(top: fsb.height +fsb.margins.vertical),
+      children: List.generate(
+        listLength,
+        growable: true,
+        (index) => ListTile(
+          title: Text(filteredSearchSuggestionsDestination[index]),
+          subtitle: const Text('University Park Campus'),
+          onTap: () {
+            setState(() {
+              isTappedDestinationTiles = true;
+
+              SchedulerBinding.instance.addPostFrameCallback((_) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  newMapsRoute,
+                  (_) => false,
+                );
+                // searchControllerDestination.open();
+                //FocusManager.instance.primaryFocus?.unfocus();
+              });
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  defaultView() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.search,
+            size: 30,
+          ),
+          Text(
+            'Start Searching',
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
+        ],
+      ),
+    );
+  }
 //DESTINATION SEARCHBAR FUNCTIONS
 
 //filter search terms so that the most relative search term returns
@@ -136,16 +228,24 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
 
   @override
   void initState() {
+    //get nodes
     getAllNodes();
+    //starting bar intializations
     searchSuggestionsStarting = selectableDestinations;
     filteredSearchSuggestionsStarting =
         filteredSearchTermStarting(filter: null);
     searchControllerStarting = FloatingSearchBarController();
-    isSubmitted = false;
+    isSubmittedStartingBar = false;
+    isTappedStartingTiles = false;
+    //destination bar initilization
     searchSuggestionsDestination = selectableDestinations;
     filteredSearchSuggestionsDestination =
         filteredSearchTermDestination(filter: null);
     searchControllerDestination = FloatingSearchBarController();
+    isSubmittedDestinationBar = false;
+    isTappedDestinationTiles = false;
+
+    number = 0;
     super.initState();
   }
 
@@ -161,60 +261,89 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
         child: AppBar(
           toolbarHeight: 150,
           actions: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: <Widget>[
-                Expanded(
-                  child: Container(
-                    height: double.infinity,
-                    width: MediaQuery.of(context).size.height *
-                        0.5, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-                    color: const Color.fromARGB(255, 54, 184, 244),
-                    child: buildFloatingSearchBarStartLocation(context),
-                  ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              //crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                CircularButton(
+                  padding: const EdgeInsets.only(bottom: 10, right: 40),
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    SchedulerBinding.instance.addPostFrameCallback((_) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        mapsRoute,
+                        (_) => false,
+                      );
+                      //FocusManager.instance.primaryFocus?.unfocus();
+                    });
+                  },
                 ),
-                Expanded(
-                  child: Container(
-                    height: double.infinity,
-                    width: MediaQuery.of(context).size.height *
-                        0.5, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-                    color: const Color.fromARGB(255, 54, 184, 244),
-                    child: buildFloatingSearchBarDestination(context),
-                  ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Container(
+                        height: double.infinity,
+                        width: MediaQuery.of(context).size.height *
+                            0.5, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+                        color: const Color.fromARGB(255, 54, 184, 244),
+                        child: buildFloatingSearchBarStartLocation(context),
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: double.infinity,
+                        width: MediaQuery.of(context).size.height *
+                            0.5, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+                        color: const Color.fromARGB(255, 54, 184, 244),
+                        child: buildFloatingSearchBarDestination(context),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            )
+            ),
           ],
         ),
       ),
-      body: isSubmitted
-          ? SearchResultsListView(searchTerm: selectedTermStarting)
-          : const SearchResultsListView(searchTerm: null),
-
-      // body: Column(
-      //   mainAxisAlignment: MainAxisAlignment.end,
-      //   children: [
-      //     Expanded(
-      //       child: Container(
-      //         height: double.infinity,
-      //         width:
-      //             500.0, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-      //         color: const Color.fromARGB(255, 54, 184, 244),
-      //         child: buildFloatingSearchBarStartLocation(context),
-      //       ),
-      //     ),
-      //     // Expanded(
-      //     //   child: Container(
-      //     //     height: double.infinity,
-      //     //     width:
-      //     //         500.0, // change tomorrowwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
-      //     //     color: const Color.fromARGB(255, 54, 184, 244),
-      //     //     child: buildFloatingSearchBarDestination(context),
-      //     //   ),
-      //     // ),
-      //   ],
-      // ),
+      body:
+          //Center(
+          renderWidget(number),
+      //);
     );
+
+    // nothingDoneYet
+    //     ? defaultView()
+    //     : startLocationSearchChosen
+    //         ? listViewSearchStarting()
+    //         : startTileChosen
+    //             ? defaultView()
+    //             : destinationChosen
+    //                 ? listViewSearchDestination()
+    //                 : destinationTileChosen
+    //                     ? defaultView
+    //                     : SizedBox());
+  }
+
+  Widget renderWidget(int number) {
+    switch (number) {
+      case 0:
+        return defaultView();
+      //break;
+      case 1:
+        return listViewSearchStarting();
+      //break;
+      case 2:
+        return defaultView();
+      //break;
+      case 3:
+        return listViewSearchDestination();
+      //break;
+      case 4:
+        return nil;
+      default:
+        return nil;
+    }
   }
 
   //floating search bar implementation
@@ -223,10 +352,10 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
     //and if it has an orientation of a portrait return true
     final isPortrait =
         MediaQuery.of(context).orientation == Orientation.portrait;
-
+    String hintVar = 'Search start location';
 //return a floating search bar
     return FloatingSearchBar(
-      hint: 'Search start location', // text shown inside search bar
+      hint: hintVar, // text shown inside search bar
       //all the characterstics of searchh bar
       scrollPadding: const EdgeInsets.only(top: 16, bottom: 56),
       transitionDuration: const Duration(milliseconds: 800),
@@ -234,17 +363,19 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
       physics: const BouncingScrollPhysics(),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
-      width: MediaQuery.of(context).size.height * 0.5,
+      width: MediaQuery.of(context).size.width * 0.8,
       borderRadius: BorderRadius.circular(8),
+      elevation: 0,
+      backdropColor: Colors.blue,
       //isPortrait ? 600 : 500,
       //height: double.infinity,
       closeOnBackdropTap: true,
       debounceDelay: const Duration(milliseconds: 500),
-      clearQueryOnClose: true, //check this again when needed
+      clearQueryOnClose: false, //check this again when needed
       controller: searchControllerStarting,
       onQueryChanged: (query) {
         setState(() {
-          searchControllerStarting.open();
+          //searchControllerStarting.open();
           filteredSearchSuggestionsStarting =
               filteredSearchTermStarting(filter: query);
         });
@@ -255,11 +386,25 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
         setState(() {
           //addSearchTerm(query);
           selectedTermStarting = query;
-          isSubmitted = true;
+          isSubmittedStartingBar = true;
+          if (number == 0) {
+            number = 1;
+          }
         });
         searchControllerStarting.close;
         searchControllerDestination.open();
+        //hintVar = query;
       },
+      onFocusChanged: (isFocused) {
+        if (isFocused == true) {
+          searchControllerDestination.close();
+          isSubmittedStartingBar = false;
+        }
+        // if (isFocused == false) {
+        //   searchControllerDestination.close();
+        // }
+      },
+
       // body: isSubmitted
       //     ? SearchResultsListView(searchTerm: selectedTermStarting)
       //     : const SearchResultsListView(searchTerm: null),
@@ -272,62 +417,7 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
         ),
       ],
       builder: (context, transition) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Material(
-            color: Colors.white,
-            elevation: 4.0,
-            child: Builder(
-              builder: (context) {
-                //when nothing has been entered
-                if (filteredSearchSuggestionsStarting.isEmpty &&
-                    searchControllerStarting.query.isEmpty) {
-                  //return empty widget
-                  return nil;
-                }
-                //when the result does not match anything from the list
-                else if (filteredSearchSuggestionsStarting.isEmpty) {
-                  //display what ever is being typed
-                  return ListTile(
-                    title: Text(searchControllerStarting.query),
-                    leading: const Icon(Icons.search),
-                    onTap: () {
-                      setState(() {
-                        addSearchTermStarting(searchControllerStarting.query);
-                        selectedTermStarting = searchControllerStarting.query;
-                      });
-                      searchControllerStarting.close();
-                    },
-                  );
-                } else {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: filteredSearchSuggestionsStarting
-                        .map(
-                          (term) => ListTile(
-                            //display drop down list tiles
-                            title: Text(
-                              term,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            leading: const Icon(Icons.history),
-                            onTap: () {
-                              setState(() {
-                                putSearchTermFirstStarting(term);
-                                selectedTermStarting = term;
-                              });
-                              searchControllerStarting.close();
-                            },
-                          ),
-                        )
-                        .toList(),
-                  );
-                }
-              },
-            ),
-          ),
-        );
+        return nil;
       }, //builder
     );
   }
@@ -348,38 +438,47 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
       physics: const BouncingScrollPhysics(),
       axisAlignment: isPortrait ? 0.0 : -1.0,
       openAxisAlignment: 0.0,
-      width: isPortrait ? 600 : 500,
+      width: MediaQuery.of(context).size.width * 0.8,
       borderRadius: BorderRadius.circular(8),
+      closeOnBackdropTap: true,
+      backdropColor: Colors.blue,
       //height: double.infinity,
       debounceDelay: const Duration(milliseconds: 500),
-      clearQueryOnClose: true, //check this again when needed
+      clearQueryOnClose: false, //check this again when needed
       controller: searchControllerDestination,
       onQueryChanged: (query) {
         setState(() {
           // searchControllerDestination.open();
-          // filteredSearchSuggestionsDestination =
-          //     filteredSearchTermDestination(filter: query);
+          filteredSearchSuggestionsStarting =
+              filteredSearchTermDestination(filter: query);
         });
         // Call your model, bloc, controller here.
       },
 
       onSubmitted: (query) {
         setState(() {
-          //addSearchTerm(query);
-          // selectedTermDestination = query;
+          selectedTermDestination = query;
+          isSubmittedDestinationBar = true;
+          number = 4;
         });
-        // searchControllerDestination.close;
+        searchControllerDestination.close;
+        //hintVar = query;
       },
 
-      // onFocusChanged: (isFocused) {
-      //   if (isFocused == true) {
-      //     isOutOfSearchBox = false;
-      //   }
-      //   if (isFocused == false) {
-      //     isOutOfSearchBox = true;
-      //   }
-      // },
-
+      onFocusChanged: (isFocused) {
+        if (isFocused == true) {
+          if (isSubmittedStartingBar == false) {
+            searchControllerStarting.close();
+          }
+          if (isSubmittedStartingBar == false) {
+            searchControllerStarting.open();
+            searchControllerDestination.close();
+          }
+        }
+        // if (isFocused == false) {
+        //   searchControllerDestination.close();
+        // }
+      },
       // body: isOutOfSearchBox
       //     ?  SearchResultsListView(searchTerm: selectedTermDestination) : SearchResultsListView(searchTerm: null)
       // Specify a custom transition to be used for
@@ -392,61 +491,61 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
         ),
       ],
       builder: (context, transition) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Material(
-            color: Colors.white,
-            elevation: 4.0,
-            child: Builder(
-              builder: (context) {
-                if (filteredSearchSuggestionsStarting.isEmpty &&
-                    searchControllerStarting.query.isEmpty) {
-                  //return empty widget
-                  return nil;
-                }
-                //when the result does not match anything from the list
-                else if (filteredSearchSuggestionsStarting.isEmpty) {
-                  //display what ever is being typed
-                  return ListTile(
-                    title: Text(searchControllerStarting.query),
-                    leading: const Icon(Icons.search),
-                    onTap: () {
-                      setState(() {
-                        addSearchTermStarting(searchControllerStarting.query);
-                        selectedTermStarting = searchControllerStarting.query;
-                      });
-                      searchControllerStarting.close();
-                    },
-                  );
-                } else {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: filteredSearchSuggestionsStarting
-                        .map(
-                          (term) => ListTile(
-                            //display drop down list tiles
-                            title: Text(
-                              term,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            leading: const Icon(Icons.history),
-                            onTap: () {
-                              setState(() {
-                                putSearchTermFirstStarting(term);
-                                selectedTermStarting = term;
-                              });
-                              searchControllerStarting.close();
-                            },
-                          ),
-                        )
-                        .toList(),
-                  );
-                }
-              },
-            ),
-          ),
-        );
+        return nil;
+        // return ClipRRect(
+        //   borderRadius: BorderRadius.circular(8),
+        //   child: Material(
+        //     color: Colors.white,
+        //     elevation: 4.0,
+        //     child: Builder(
+        //       builder: (context) {
+        //         if (filteredSearchSuggestionsStarting.isEmpty &&
+        //             searchControllerStarting.query.isEmpty) {
+        //           //return empty widget
+        //           return nil;
+        //         }
+        //         //when the result does not match anything from the list
+        //         else if (filteredSearchSuggestionsStarting.isEmpty) {
+        //           // display what ever is being typed
+        //           return ListTile(
+        //             title: Text(searchControllerStarting.query),
+        //             onTap: () {
+        //               setState(() {
+        //                 addSearchTermStarting(searchControllerStarting.query);
+        //                 selectedTermStarting = searchControllerStarting.query;
+        //               });
+        //               searchControllerStarting.close();
+        //             },
+        //           );
+        //         } else {
+        //           return Column(
+        //             mainAxisSize: MainAxisSize.min,
+        //             children: filteredSearchSuggestionsStarting
+        //                 .map(
+        //                   (term) => ListTile(
+        //                     //display drop down list tiles
+        //                     title: Text(
+        //                       term,
+        //                       maxLines: 1,
+        //                       overflow: TextOverflow.ellipsis,
+        //                     ),
+        //                     leading: const Icon(Icons.history),
+        //                     onTap: () {
+        //                       setState(() {
+        //                         putSearchTermFirstStarting(term);
+        //                         selectedTermStarting = term;
+        //                       });
+        //                       searchControllerStarting.close();
+        //                     },
+        //                   ),
+        //                 )
+        //                 .toList(),
+        //           );
+        //         }
+        //       },
+        //     ),
+        //   ),
+        // );
       }, //builder
     );
   }
@@ -455,10 +554,13 @@ class _DoubleSearchBarStateView extends State<DoubleSearchBarView> {
 class SearchResultsListView extends StatelessWidget {
   //variable
   final String? searchTerm;
+  final List<String> filtered;
+  //bool tappedTile = false;
   //constructor
   const SearchResultsListView({
     super.key,
     required this.searchTerm,
+    required this.filtered,
   });
 
   @override
@@ -470,7 +572,7 @@ class SearchResultsListView extends StatelessWidget {
           children: [
             const Icon(
               Icons.search,
-              size: 15,
+              size: 30,
             ),
             Text(
               'Start Searching',
@@ -481,20 +583,20 @@ class SearchResultsListView extends StatelessWidget {
       );
     }
 
-    final fsb = FloatingSearchBar.of(context);
+    int? listLength = filtered.length;
+    // final fsb = FloatingSearchBar.of(context);
 
     return ListView(
       //padding: EdgeInsets.only(top: fsb.height +fsb.margins.vertical),
       children: List.generate(
-        10,
+        listLength,
+        growable: true,
         (index) => ListTile(
-          title: Text('$searchTerm'),
+          title: Text(filtered[index]),
           subtitle: const Text('University Park Campus'),
+          onTap: () {},
         ),
       ),
     );
   }
 }
-// searchTerm?.isEmpty ?? true
-//               ? const Text('University Park Campus')
-//               : const Text(''),

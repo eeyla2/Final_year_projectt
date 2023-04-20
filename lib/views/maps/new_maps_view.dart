@@ -1,13 +1,13 @@
 import 'dart:ui' as ui;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+//import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:directed_graph/directed_graph.dart';
 import 'package:legsfree/models/nodes_model.dart';
 import 'package:legsfree/models/route_map.dart';
 import 'package:legsfree/models/route_points.dart';
 import 'package:legsfree/models/weights.dart';
-import 'package:legsfree/services/crud/crud_exceptions.dart';
-import 'package:legsfree/services/crud/main_services.dart';
+// import 'package:legsfree/services/crud/crud_exceptions.dart';
+// import 'package:legsfree/services/crud/main_services.dart';
 import 'package:legsfree/services/local%20db%20helper/local_db_helper.dart';
 
 import 'package:flutter/material.dart';
@@ -133,7 +133,7 @@ class _NewMapsViewState extends State<NewMapsView> {
   }
 
   storeLightestPathAndPointsInBetween() async {
-    var startLocation = '', destination;
+    var startLocation = '', destination = '';
     for (int j = 0; j < selectableDestinations.length; ++j) {
       for (int i = 0; i < selectableDestinations.length; ++i) {
         startLocation = selectableDestinations[j];
@@ -168,12 +168,13 @@ class _NewMapsViewState extends State<NewMapsView> {
           var getPointsInfo = await _localDBhelper
               .getRoutePointsForOneJourney(journeyNameToGetWeight);
 
-          updateRoutePoints(List item) async {
+          newRoutePoints(List item) async {
             int counter = 0;
             for (int y = 0; y < item.length; ++y) {
               //updating the journey weight
               getPointsInfo[y].points = lightestPath[counter];
-
+              getPointsInfo[y].position = (counter + 1);
+              devtools.log('when is it stopping = $counter');
               //storing it in a variable
               var updatedPoints = getPointsInfo[y];
 
@@ -191,26 +192,30 @@ class _NewMapsViewState extends State<NewMapsView> {
           //if data exists update it
           if (getMapInfo.isNotEmpty) {
             devtools.log(' lightest path= $lightestPath');
-            devtools.log(' lightest path length= ${lightestPath.length}');
+            //devtools.log(' lightest path length= ${lightestPath.length}');
             int counterOutsideLoop = 0;
-            //int counter =0;
+
+            //if the new and old data have the same length
             if (lightestPath.length == getPointsInfo.length) {
               //implement the function updateRoutePoints
-              updateRoutePoints(getPointsInfo);
-            } else if (lightestPath.length > getPointsInfo.length) {
+              newRoutePoints(getPointsInfo);
+            }
+            //if new data has a greater length than old data
+            else if (lightestPath.length > getPointsInfo.length) {
               //countinue the counter outside the loop after done updating exisiting loops
-              counterOutsideLoop = await updateRoutePoints(getPointsInfo);
+              counterOutsideLoop = await newRoutePoints(getPointsInfo);
 
-              // devtools.log(' count outside of loop= $counterOutsideLoop');
-              // devtools.log(' count outside of loop= $counterOutsideLoop');
+              devtools.log(' count outside of loop= $counterOutsideLoop');
+              devtools
+                  .log(' count length of points info= ${getPointsInfo.length}');
               //devtools.log(
               //  'count outside of loop= ${lightestPath.length - counterOutsideLoop}');
-              devtools.log('here bro');
+              //devtools.log('here bro');
               int addedCounter = 0;
-              for (int t = counterOutsideLoop;
+              for (int t = 0;
                   t < (lightestPath.length - getPointsInfo.length);
                   ++t) {
-                devtools.log('here');
+                //devtools.log('here inside for loop');
                 //create a New point in between
                 RoutePointsModel updateRouteWithNewPointsInBetween =
                     RoutePointsModel(
@@ -219,24 +224,29 @@ class _NewMapsViewState extends State<NewMapsView> {
                         points: lightestPath[counterOutsideLoop],
                         position: (counterOutsideLoop + 1),
                         journeyName: journeyNameToGetWeight);
-                devtools.log('here');
+                //devtools.log('here after addition');
                 //implement the new point into the local database
-                var addedRoutePoint =
-                    await _localDBhelper.addRoutePointsDataInLocalDB(
-                        updateRouteWithNewPointsInBetween);
-                addedCounter += addedRoutePoint;
-                devtools.log('here');
+                var addedRoutePoint = _localDBhelper.addRoutePointsInFirebase(
+                    updateRouteWithNewPointsInBetween);
+
+                //LocalDBhelper.addRoutePointsInFirebase(
+                //updateRouteWithNewPointsInBetween);
+                //addedCounter += addedRoutePoint;
+                //devtools.log('here when done');
                 devtools.log('count of added route points = $addedCounter');
                 counterOutsideLoop++;
                 //increase counter
               }
-            } else if (lightestPath.length < getPointsInfo.length) {
+            }
+            //if new data is shorter than old data
+            else if (lightestPath.length < getPointsInfo.length) {
               //continue counter outside loop after done updating existing loops
-              counterOutsideLoop = await updateRoutePoints(lightestPath);
+              //devtools.log('here cabron');
+              counterOutsideLoop = await newRoutePoints(lightestPath);
               int deletedCounter = 0;
 
               for (int t = 0;
-                  t < (getMapInfo.length - lightestPath.length);
+                  t < (getPointsInfo.length - lightestPath.length);
                   ++t) {
                 //delet the rest of the points.
                 var deletedRoutePoint = await _localDBhelper
@@ -278,15 +288,12 @@ class _NewMapsViewState extends State<NewMapsView> {
               mapName: 'nothing',
               maps: 'none yet',
             );
-            var addedRoutes =
-                await _localDBhelper.addRouteMapDataInLocalDB(newRoute);
+            var addedRoutes = _localDBhelper.addRouteMapsInFirebase(newRoute);
 
-            devtools.log('added route count from the database= $addedRoutes');
+            devtools.log('Here It Is');
+            // devtools.log('added route count from the database= $addedRoutes');
             // MAYBBE SET A COUNTER FOR THE ROUTESSSS
           }
-          //////////////////else {
-          //swap the start and ending destination
-          devtools.log('skipped to avoid repitition');
         }
       }
 
@@ -294,6 +301,7 @@ class _NewMapsViewState extends State<NewMapsView> {
         devtools.log(
             'skipped as the destination and starting location are the same');
       }
+      devtools.log('new destination');
     }
   }
 
@@ -342,7 +350,7 @@ class _NewMapsViewState extends State<NewMapsView> {
               ),
             ),
           ),
-          SizedBox(
+          const SizedBox(
             width: 500,
             height: 60,
             child: CustomPaint(

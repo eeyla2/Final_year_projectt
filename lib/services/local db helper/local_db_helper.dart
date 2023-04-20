@@ -108,7 +108,7 @@ class LocalDBhelper {
               RouteMapModel.fromDocumentSnapshot(value.docs[i]);
           routeMapList.add(routeMaps);
           addRouteMapDataInLocalDB(routeMaps)
-              .then((value) => print('VAL $value'));
+              .then((value) => devtools.log('VAL $value'));
         }
         return routeMapList;
       });
@@ -144,8 +144,8 @@ class LocalDBhelper {
             RoutePointsModel routePoints =
                 RoutePointsModel.fromDocumentSnapshot(value.docs[i]);
             routePointList.add(routePoints);
-            addRoutePointsDataInLocalDB(routePoints)
-                .then((value) => devtools.log('VAL $value'));
+            addRoutePointsDataInLocalDB(routePoints);
+            //.then((value) => devtools.log('VAL $value'));
           }
         });
         devtools.log('ROUTE POINTS DATA IS ${routePointList.length}');
@@ -155,7 +155,7 @@ class LocalDBhelper {
         return routePointList;
       }
     } catch (e) {
-      print('the error for getting the point in between routes is $e');
+      devtools.log('the error for getting the point in between routes is $e');
       throw Exception;
       //CouldNotFindPointsInBetween();
     }
@@ -222,6 +222,83 @@ class LocalDBhelper {
   Future<int> addWeightsDataInLocalDB(WeightsModel modelData) async {
     final database = await initDatabase();
     return await database.insert('weights', modelData.toMap());
+  }
+
+  void addNodesInFirebase(NodesModel data) async {
+    try {
+      addNodesDataInLocalDB(data);
+      final firebaseData =
+          await FirebaseFirestore.instance.collection('nodes').get();
+      int length = firebaseData.docs.length;
+      await FirebaseFirestore.instance.collection('nodes').add({
+        NodesVar.isSelectable: data.isSelectable,
+        NodesVar.x: data.x,
+        NodesVar.name: data.name,
+        NodesVar.y: data.y
+      }).then((value) => devtools.log("NODE ADDED WITH ID ${length + 1}"));
+    } catch (e) {
+      devtools.log('the error is = $e');
+    }
+  }
+
+  //ROUTE MAP
+  void addRouteMapsInFirebase(RouteMapModel data) async {
+    try {
+      addRouteMapDataInLocalDB(data);
+      final firebaseData =
+          await FirebaseFirestore.instance.collection('route_map').get();
+      int length = firebaseData.docs.length;
+      await FirebaseFirestore.instance.collection('route_map').add({
+        RouteMapsVar.isKnown: data.isKnown,
+        RouteMapsVar.journeyName: data.journeyName,
+        RouteMapsVar.location1: data.location1,
+        RouteMapsVar.location2: data.location2,
+        RouteMapsVar.mapName: data.mapName,
+        RouteMapsVar.maps: data.maps,
+        RouteMapsVar.totalWeight: data.totalWeight,
+        RouteMapsVar.weightClass: data.weightClass
+      }).then((value) => devtools.log("ROUTE MAP ADDED WITH ID ${length + 1}"));
+    } catch (e) {
+      devtools.log('the error is = $e');
+    }
+  }
+
+  //ROUTE POINTS
+  void addRoutePointsInFirebase(RoutePointsModel data) async {
+    try {
+      addRoutePointsDataInLocalDB(data);
+      final firebaseData =
+          await FirebaseFirestore.instance.collection('route_points').get();
+      int length = firebaseData.docs.length;
+      await FirebaseFirestore.instance.collection('route_points').add({
+        RoutePointsVar.location1: data.location1,
+        RoutePointsVar.location2: data.location2,
+        RoutePointsVar.points: data.points,
+        RoutePointsVar.position: data.position,
+        RoutePointsVar.journeyName: data.journeyName,
+      }).then(
+          (value) => devtools.log("ROUTE POINT ADDED WITH ID ${length + 1}"));
+    } catch (e) {
+      devtools.log('the error is = $e');
+    }
+  }
+
+  //WEIGHT
+  void addWeightInFirebase(WeightsModel data) async {
+    try {
+      addWeightsDataInLocalDB(data);
+      final firebaseData =
+          await FirebaseFirestore.instance.collection('weights').get();
+      int length = firebaseData.docs.length;
+      await FirebaseFirestore.instance.collection('weights').add({
+        WeightVar.node1: data.node1,
+        WeightVar.node2: data.node2,
+        WeightVar.weight: data.weight,
+        WeightVar.weightClass: data.weightClass,
+      }).then((value) => devtools.log("WEIGHT ADDED WITH ID ${length + 1}"));
+    } catch (e) {
+      devtools.log('the error is = $e');
+    }
   }
 
   // DELETE NODE
@@ -334,16 +411,14 @@ class LocalDBhelper {
   // UPDATE NODES
   Future<int> updateNodes(NodesModel data) async {
     final db = await initDatabase();
-    final updateCount = await db.update(
-      'nodes',
-      data.toMap(),
-      where: 'name = ?',
-      whereArgs: [data.name],
-    );
+    try {
+      final updateCount = await db.update(
+        'nodes',
+        data.toMap(),
+        where: 'name = ?',
+        whereArgs: [data.name],
+      );
 
-    if (updateCount == 0) {
-      throw CouldNotUpdateNode();
-    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('nodes')
@@ -354,22 +429,23 @@ class LocalDBhelper {
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
       return updateCount;
+    } catch (e) {
+      devtools.log('the error for update nodes is = $e');
+      throw Exception();
     }
   }
 
   // UPDATE ROUTE MAP
   Future<int> updateRouteMap(RouteMapModel data) async {
     final db = await initDatabase();
-    var updateCount = await db.update(
-      'route_map',
-      data.toMap(),
-      where: 'journey_name = ?',
-      whereArgs: [data.journeyName],
-    );
+    try {
+      var updateCount = await db.update(
+        'route_map',
+        data.toMap(),
+        where: 'journey_name = ?',
+        whereArgs: [data.journeyName],
+      );
 
-    if (updateCount == 0) {
-      throw CouldNotUpdateMapImage();
-    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('route_map')
@@ -380,22 +456,23 @@ class LocalDBhelper {
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
       return updateCount;
+    } catch (e) {
+      devtools.log('the error for update route maps is = $e');
+      throw Exception();
     }
   }
 
   //UPDATE ROUTE POINTS
   Future<int> updateRoutePoints(RoutePointsModel data) async {
     final db = await initDatabase();
-    final updateCount = await db.update(
-      'route_points',
-      data.toMap(),
-      where: 'journey_name = ? and position = ?',
-      whereArgs: [data.journeyName, data.position],
-    );
+    try {
+      final updateCount = await db.update(
+        'route_points',
+        data.toMap(),
+        where: 'journey_name = ? and position = ?',
+        whereArgs: [data.journeyName, data.position],
+      );
 
-    if (updateCount == 0) {
-      throw CouldNotUpdateNode();
-    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('route_points')
@@ -403,29 +480,33 @@ class LocalDBhelper {
             'journey_name',
             isEqualTo: data.journeyName,
           )
-          .where('position', isEqualTo: data.position)
+          .where(
+            'position',
+            isEqualTo: data.position,
+          )
           .get();
       await FirebaseFirestore.instance
           .collection('route_points')
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
       return updateCount;
+    } catch (e) {
+      devtools.log('the error for update route points is= $e');
+      throw Exception();
     }
   }
 
   //UPDATE WEIGHTS
   Future<int> updateWeights(WeightsModel data) async {
     final db = await initDatabase();
-    final updateCount = await db.update(
-      'weights',
-      data.toMap(),
-      where: 'node_1 = ?',
-      whereArgs: [data.node1],
-    );
+    try {
+      final updateCount = await db.update(
+        'weights',
+        data.toMap(),
+        where: 'node_1 = ?',
+        whereArgs: [data.node1],
+      );
 
-    if (updateCount == 0) {
-      throw CouldNotUpdateNode();
-    } else {
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('weights')
@@ -436,6 +517,9 @@ class LocalDBhelper {
           .doc(firebaseData.docs[0].id)
           .update(data.toMap());
       return updateCount;
+    } catch (e) {
+      devtools.log('the error for update weight is = $e');
+      throw Exception();
     }
   }
 
