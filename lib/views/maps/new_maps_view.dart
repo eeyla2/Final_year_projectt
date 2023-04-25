@@ -120,9 +120,9 @@ class _NewMapsViewState extends State<NewMapsView> {
         graph.lightestPath('Physics Building', 'Student Services');
     // devtools.log('LIST OF POINTS ${listOfPointsInBetween}');
 
-    // graph.data.forEach((key, value) {
-    //   devtools.log('$key and $value');
-    // });
+    graph.data.forEach((key, value) {
+      devtools.log('$key and $value');
+    });
 
     isLoading = false;
     //storeLightestPaths();
@@ -333,9 +333,6 @@ class _NewMapsViewState extends State<NewMapsView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('map route'),
-      ),
       body: Stack(
         children: <Widget>[
           SingleChildScrollView(
@@ -408,7 +405,11 @@ class LocationCircles extends CustomPainter {
 
     var paint1 = Paint()
       ..color = const Color.fromARGB(255, 107, 14, 14)
-      ..style = PaintingStyle.fill;
+      //..style = PaintingStyle.stroke
+      ..strokeWidth = 10;
+    // ..StrokeJoin = StrokeJoin.round;
+    //PaintingStyle.fill;
+
     canvas.drawCircle(const Offset(533, 326), 6, paint1); //draw circle
     canvas.drawPoints(pointMode, points, paint1); // draw line between points
   }

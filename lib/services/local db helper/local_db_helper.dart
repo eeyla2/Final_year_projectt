@@ -76,8 +76,8 @@ class LocalDBhelper {
         return nodesList;
       }
     } catch (e) {
-      devtools.log('error is $e');
-      throw CouldNotFindNode();
+      devtools.log('error for getting all nodes is $e');
+      throw Exception();
     }
   }
 
@@ -308,9 +308,9 @@ class LocalDBhelper {
     final deletedCount =
         await db.delete('nodes', where: 'id = ?', whereArgs: [id]);
 
-    if (deletedCount != 1) {
-      throw CouldNotDeleteNode();
-    }
+    // if (deletedCount != 1) {
+    //   throw CouldNotDeleteNode();
+    // }
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
         .collection('nodes')
@@ -329,9 +329,9 @@ class LocalDBhelper {
     final deletedCount =
         await db.delete('route_map', where: 'id = ?', whereArgs: [id]);
 
-    if (deletedCount != 1) {
-      throw CouldNotDeleteMapImage();
-    }
+    // if (deletedCount != 1) {
+    //   throw CouldNotDeleteMapImage();
+    // }
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
         .collection('route_map')
@@ -351,9 +351,9 @@ class LocalDBhelper {
         where: 'journey_name = ? and position = ?',
         whereArgs: [data.journeyName, data.position]);
 
-    if (deletedCount != 1) {
-      throw CouldNotDeletePointsInBetween();
-    }
+    // if (deletedCount != 1) {
+    //   throw CouldNotDeletePointsInBetween();
+    // }
 
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
@@ -376,9 +376,9 @@ class LocalDBhelper {
     final deletedCount =
         await db.delete('weights', where: 'weight_id = ?', whereArgs: [id]);
 
-    if (deletedCount != 1) {
-      throw CouldNotDeleteNodesWeight();
-    }
+    // if (deletedCount != 1) {
+    //   throw CouldNotDeleteNodesWeight();
+    // }
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
         .collection('weights')

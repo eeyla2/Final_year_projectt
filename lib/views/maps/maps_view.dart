@@ -141,42 +141,39 @@ class _MainViewState extends State<MainView> {
               return Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Stack(
-                  children: <Widget>[
+                  children: [
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
-                      //scroll widget
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 40.0),
-                        child: SizedBox(
-                          height: MediaQuery.of(context).size.height * 1,
-                          child: Image.asset(
-                            //loads an image on to the app
-                            'images/map.png',
-                            fit: BoxFit.cover,
+                      child: Stack(
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.only(top: 40.0),
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 1,
+                              child: Image.asset(
+                                //loads an image on to the app
+                                'images/map.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
-                        ),
+                          IgnorePointer(
+                            ignoring: true,
+                            child: SizedBox(
+                              height: MediaQuery.of(context).size.height * 1,
+                              child: CustomPaint(
+                                willChange: true,
+                                painter: LocationCircles(),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.95,
-                        height: MediaQuery.of(context).size.height * 0.14,
-                        child: buildFloatingSearchBar(context),
-                      ),
-                    ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.5,
-                        height: MediaQuery.of(context).size.height * 0.5,
-
-                        //MediaQuery.of(context).size
-                        child: CustomPaint(
-                          size: MediaQuery.of(context).size,
-                          painter: LocationCircles(),
-                        ),
-                      ),
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.95,
+                      height: MediaQuery.of(context).size.height * 0.14,
+                      child: buildFloatingSearchBar(context),
                     ),
                   ],
                 ),
@@ -267,21 +264,8 @@ class _MainViewState extends State<MainView> {
       clearQueryOnClose: true, //check this again when needed
       controller: searchController,
       borderRadius: BorderRadius.circular(15),
-      onQueryChanged: (query) {
-        // setState(() {
-        //   searchController.open();
-        //   filteredSearchSuggestions = filteredSearchTerm(filter: query);
-        // });
-        // Call your model, bloc, controller here.
-      },
-      //body: SearchResultsListView(searchTerm: selectedTerm),
-      // onSubmitted: (query) {
-      //   setState(() {
-      //     //addSearchTerm(query);
-      //     selectedTerm = query;
-      //   });
-      //   searchController.close;
-      // },
+      onQueryChanged: (query) {},
+
       onFocusChanged: (isFocused) {
         SchedulerBinding.instance.addPostFrameCallback((_) {
           Navigator.of(context).pushNamedAndRemoveUntil(
@@ -415,28 +399,29 @@ class SearchResultsListView extends StatelessWidget {
 //draws circles and lines
 class LocationCircles extends CustomPainter {
   //override the paint function with the data and functions to paint
+
   @override
   void paint(Canvas canvas, Size size) {
     const pointMode = ui.PointMode.polygon; // drawing as a polygon
     const points = [
       //the points the line will draw in between
-      Offset(650, 180), //22
-      Offset(645, 171), //Y101
-      Offset(633, 156), //Y102
-      Offset(635, 170), //W101
-      Offset(626, 192), //W102
-      Offset(614, 202), //W103
-      Offset(607, 218), //W104
-      Offset(615, 232), //W105
-      Offset(624, 252), //W106
-      Offset(622, 260), //W107
-      Offset(623, 262), //W201
-      Offset(635, 266), //W301
-      Offset(650, 254), //57
-      Offset(651, 269), //24
-      Offset(450, 150), //57
-      Offset(800, 500), //24
-      Offset(200, 100),
+      Offset(506, 174), //PBP
+      Offset(501, 167), //PDHO
+      Offset(490, 156), //PTI
+      Offset(493, 167), //ROCHO
+      Offset(482, 186), //ROCHTwo
+      Offset(473, 196), //ROCHThree
+      Offset(475, 212), //BBS
+      Offset(483, 226), //ZC
+      Offset(482, 236), //GGHO
+      Offset(497, 242), //GGHT
+      Offset(504, 231), //SSP
+      // Offset(491, 240), //W301
+      // Offset(506, 248), //57
+      // Offset(507, 263), //24
+      // Offset(450, 150), //57
+      // Offset(800, 500), //24
+      // Offset(200, 100),
       //Offset(656, 280), //23
       //Offset(636, 282), //20
       //Offset(596, 280), //56
@@ -448,36 +433,13 @@ class LocationCircles extends CustomPainter {
     ];
     var paint1 = Paint()
       ..color = const Color.fromARGB(255, 107, 14, 14)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(533, 326), 14, paint1); //draw circle
-    canvas.drawCircle(const Offset(200, 100), 14, paint1); //draw circle
+      ..style = PaintingStyle.fill
+      ..strokeWidth = 3;
+    //canvas.drawCircle(const Offset(533, 326), 6, paint1); //draw circle
+    //canvas.drawCircle(const Offset(200, 100), 14, paint1); //draw circle
     canvas.drawPoints(pointMode, points, paint1); // draw line between points
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
-// class LocationCircles extends CustomPainter {
-//   //override the paint function with the data and functions to paint
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     const pointMode = ui.PointMode.polygon; // drawing as a polygon
-//     const points = [
-//       //the points the line will drawe in between
-//       Offset(50, 100),
-//       Offset(150, 75),
-//       Offset(250, 250),
-//       Offset(130, 200),
-//       Offset(270, 100),
-//     ];
-//     var paint1 = Paint()
-//       ..color = const Color.fromARGB(255, 107, 14, 14)
-//       ..style = PaintingStyle.fill;
-//     canvas.drawCircle(const Offset(200, 100), 5, paint1);
-//     canvas.drawCircle(const Offset(200, 100), 5, paint1); //draw circle
-//     canvas.drawPoints(pointMode, points, paint1); // draw line between points
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-// }
