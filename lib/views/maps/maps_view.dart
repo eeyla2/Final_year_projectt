@@ -282,6 +282,25 @@ class _MainViewState extends State<MainView> {
       actions: [
         //implementation of a popupmenu
         PopupMenuButton<MenuAction>(
+          color: Colors.deepPurple[300],
+          shape: Border(
+            top: BorderSide(
+              color: Colors.deepPurple[100]!,
+              width: 3,
+            ),
+            bottom: BorderSide(
+              color: Colors.deepPurple[100]!,
+              width: 3,
+            ),
+            right: BorderSide(
+              color: Colors.deepPurple[100]!,
+              width: 3,
+            ),
+            left: BorderSide(
+              color: Colors.deepPurple[100]!,
+              width: 3,
+            ),
+          ),
           onSelected: (value) async {
             switch (value) {
               case MenuAction.logout:
@@ -302,7 +321,17 @@ class _MainViewState extends State<MainView> {
             return const [
               PopupMenuItem<MenuAction>(
                 value: MenuAction.logout,
-                child: Text(' Logout'),
+                padding:
+                    EdgeInsets.only(top: 20, left: 25, right: 10, bottom: 20),
+                child: Text(
+                  //selectionColor: Colors.deepPurple[100],
+                  'Logout',
+                  style: TextStyle(
+                    color: Colors.black,
+                    //fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
               ),
             ];
           },

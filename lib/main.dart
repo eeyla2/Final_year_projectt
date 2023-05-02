@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 //import 'package:legsfree/error_handling/error_handler.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
-import 'package:legsfree/views/maps/double_search_bar._view.dart';
+import 'package:legsfree/views/maps/double_search_bar._view(old).dart';
 import 'package:legsfree/views/maps/maps_view.dart';
 import 'package:legsfree/views/maps/new_maps_view.dart';
 import 'package:location/location.dart';
@@ -16,6 +16,8 @@ import 'package:legsfree/views/register_view.dart';
 import 'package:legsfree/views/verify_email_view.dart';
 import 'constants/routes.dart';
 import 'dart:developer' as devtools show log;
+
+import 'views/maps/double_search_bar_view.dart';
 
 //import 'package:floating_search_bar/floating_search_bar.dart';
 
@@ -40,7 +42,7 @@ Future<void> main() async {
           registerRoute: (context) => const RegisterView(),
           mapsRoute: (context) => const MainView(),
           verifyEmailRoute: (context) => const VerifyEmailView(),
-          newMapsRoute: (context) => const NewMapsView(),
+          newMapsRoute: (context) => const NewMapsView(startLocation: '',destination: '',),
           doubleSearchBarRoute: (context) => const DoubleSearchBarView(),
         }),
   );
@@ -115,6 +117,9 @@ Future<bool> showLogOutDialog(BuildContext context) {
     context: context,
     builder: (context) {
       return AlertDialog(
+        shape: BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
         title: const Text('Sign out'), //the title
         content: const Text(
             'Are you sure you want to sign out?'), // the question written in the dialog

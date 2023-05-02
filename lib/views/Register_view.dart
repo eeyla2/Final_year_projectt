@@ -57,16 +57,25 @@ class _RegisterViewState extends State<RegisterView> {
                 height: 10,
               ),
               Container(
-                padding: const EdgeInsets.only(left: 50.0),
-                child: const Text(
-                  'You look lost... Don\'t worry you are in the right place!',
-                  style: TextStyle(
-                    fontSize: 24,
+                padding: const EdgeInsets.only(left: 18.0),
+                child: Text(
+                  'You look lost...',
+                  style: GoogleFonts.bebasNeue(
+                    fontSize: 30,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.only(),
+                child: Text(
+                  'Don\'t worry you are in the right place!',
+                  style: GoogleFonts.bebasNeue(
+                    fontSize: 28,
                   ),
                 ),
               ),
               const SizedBox(
-                height: 10,
+                height: 40,
               ),
               const Text(
                 'Register with a new account',
@@ -75,7 +84,7 @@ class _RegisterViewState extends State<RegisterView> {
                 ),
               ),
               const SizedBox(
-                height: 50,
+                height: 30,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -99,7 +108,7 @@ class _RegisterViewState extends State<RegisterView> {
                 ),
               ),
               const SizedBox(
-                height: 10,
+                height: 12,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 25.0),
@@ -124,7 +133,7 @@ class _RegisterViewState extends State<RegisterView> {
                 ),
               ),
               const SizedBox(
-                height: 10,
+                height: 20,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15.0),
