@@ -5,15 +5,14 @@ import 'package:legsfree/constants/routes_map_var.dart';
 class RouteMapModel {
   //variables
   int? isKnown, totalWeight, weightClass;
-  String? journeyName, mapName, location1, location2, maps;
+  String? journeyName, mapURL, location1, location2;
   //constructor
   RouteMapModel(
       {required this.isKnown,
       required this.journeyName,
       required this.location1,
       required this.location2,
-      required this.mapName,
-      required this.maps,
+      required this.mapURL,
       required this.totalWeight,
       required this.weightClass});
   //named second constructor
@@ -32,8 +31,7 @@ class RouteMapModel {
         journeyName: json[RouteMapsVar.journeyName],
         location1: json[RouteMapsVar.location1],
         location2: json[RouteMapsVar.location2],
-        mapName: json[RouteMapsVar.mapName],
-        maps: json[RouteMapsVar.maps],
+        mapURL: json[RouteMapsVar.mapURL],
         totalWeight: json[RouteMapsVar.totalWeight],
         weightClass: json[RouteMapsVar.weightClass],
       );
@@ -44,8 +42,7 @@ class RouteMapModel {
       RouteMapsVar.journeyName: journeyName,
       RouteMapsVar.location1: location1,
       RoutePointsVar.location2: location2,
-      RouteMapsVar.mapName: mapName,
-      RouteMapsVar.maps: maps,
+      RouteMapsVar.mapURL: mapURL,
       RouteMapsVar.totalWeight: totalWeight,
       RouteMapsVar.weightClass: weightClass,
     };
@@ -56,8 +53,7 @@ class RouteMapModel {
     journeyName = json[RouteMapsVar.journeyName];
     location1 = json[RouteMapsVar.location1];
     location2 = json[RouteMapsVar.location2];
-    mapName = json[RouteMapsVar.mapName];
-    maps = json[RouteMapsVar.maps];
+    mapURL = json[RouteMapsVar.mapURL];
     totalWeight = json[RouteMapsVar.totalWeight];
     weightClass = json[RouteMapsVar.weightClass];
   }

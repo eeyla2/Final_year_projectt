@@ -33,7 +33,7 @@ class LocalDBhelper {
     );
     //ROUTE MAPS
     await db.execute(
-        'CREATE TABLE route_map(${RouteMapsVar.isKnown} INTEGER, ${RouteMapsVar.journeyName} TEXT, ${RouteMapsVar.location1} TEXT, ${RouteMapsVar.location2} TEXT, ${RouteMapsVar.mapName} TEXT, ${RouteMapsVar.maps} TEXT, ${RouteMapsVar.totalWeight} INTEGER, ${RouteMapsVar.weightClass} INTEGER)');
+        'CREATE TABLE route_map(${RouteMapsVar.isKnown} INTEGER, ${RouteMapsVar.journeyName} TEXT, ${RouteMapsVar.location1} TEXT, ${RouteMapsVar.location2} TEXT, ${RouteMapsVar.mapURL} TEXT, ${RouteMapsVar.totalWeight} INTEGER, ${RouteMapsVar.weightClass} INTEGER)');
     //ROUTE POINTS
     await db.execute(
         'CREATE TABLE route_points(${RoutePointsVar.journeyName} TEXT, ${RoutePointsVar.location1} TEXT, ${RoutePointsVar.location2} TEXT, ${RoutePointsVar.points} TEXT, ${RoutePointsVar.position} INTEGER)');
@@ -253,8 +253,7 @@ class LocalDBhelper {
         RouteMapsVar.journeyName: data.journeyName,
         RouteMapsVar.location1: data.location1,
         RouteMapsVar.location2: data.location2,
-        RouteMapsVar.mapName: data.mapName,
-        RouteMapsVar.maps: data.maps,
+        RouteMapsVar.mapURL: data.mapURL,
         RouteMapsVar.totalWeight: data.totalWeight,
         RouteMapsVar.weightClass: data.weightClass
       }).then((value) => devtools.log("ROUTE MAP ADDED WITH ID ${length + 1}"));

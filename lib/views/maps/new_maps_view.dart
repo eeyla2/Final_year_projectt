@@ -36,6 +36,9 @@ class _NewMapsViewState extends State<NewMapsView> {
   List<String> selectableDestinations = [];
   bool isLoading = true;
   List<Offset> coordinates = [];
+  bool isUpdatedMap = false;
+  int totalWeight = 0;
+  String databaseMap = '';
   //LOCAL DB HELPER
   final LocalDBhelper _localDBhelper = LocalDBhelper();
   //GETTING ALL NODES
@@ -146,6 +149,7 @@ class _NewMapsViewState extends State<NewMapsView> {
       var lightestPath = graph.lightestPath(startLocation, destination);
 
       var weightOfLightestPath = graph.weightAlong(lightestPath);
+      totalWeight = weightOfLightestPath;
       devtools.log('TOTAL WEIGHT $weightOfLightestPath');
       //the path is only drawn one directionalso it avoids replication which would appear as 0
       if (weightOfLightestPath == 0) {
@@ -164,8 +168,6 @@ class _NewMapsViewState extends State<NewMapsView> {
       devtools.log('journey name= $journeyNameToGetWeight');
 
       //try to get the data to see if the route already exists
-      var getMapInfo = await _localDBhelper
-          .getRouteMapsForOneJourney(journeyNameToGetWeight);
 
       //get the route points for this journey
       var getPointsInfo = await _localDBhelper
@@ -193,18 +195,27 @@ class _NewMapsViewState extends State<NewMapsView> {
       }
 
       //if data exists update it
-      if (getMapInfo.isNotEmpty) {
+      if (getPointsInfo.isNotEmpty) {
         devtools.log(' lightest path= $lightestPath');
         //devtools.log(' lightest path length= ${lightestPath.length}');
         int counterOutsideLoop = 0;
 
         //if the new and old data have the same length
         if (lightestPath.length == getPointsInfo.length) {
+          for (int i = 0; i < lightestPath.length; i++) {
+            if (lightestPath[i] != getPointsInfo[i].points) {
+              //UPDATE
+              newRoutePoints(getPointsInfo);
+              isUpdatedMap = true;
+              break;
+            }
+          }
           //implement the function updateRoutePoints
-          newRoutePoints(getPointsInfo);
         }
         //if new data has a greater length than old data
         else if (lightestPath.length > getPointsInfo.length) {
+          //UPDATE
+          isUpdatedMap = true;
           //countinue the counter outside the loop after done updating exisiting loops
           counterOutsideLoop = await newRoutePoints(getPointsInfo);
 
@@ -242,6 +253,7 @@ class _NewMapsViewState extends State<NewMapsView> {
         }
         //if new data is shorter than old data
         else if (lightestPath.length < getPointsInfo.length) {
+          isUpdatedMap = true;
           //continue counter outside loop after done updating existing loops
           //devtools.log('here cabron');
           counterOutsideLoop = await newRoutePoints(lightestPath);
@@ -260,36 +272,19 @@ class _NewMapsViewState extends State<NewMapsView> {
           }
         }
         //}
-        for (int t = 0; t < getMapInfo.length; ++t) {
-          // devtools.log(
-          //     'weight of lightest path from the database= ${getMapInfo[t].totalWeight}');
-          //updating the journey weight
-          getMapInfo[t].totalWeight = weightOfLightestPath;
-          //storing it in a variable
-          var updatedWeight = getMapInfo[t];
-          //updating
-          var updateWeightCount =
-              await _localDBhelper.updateRouteMap(updatedWeight);
-          //  devtools.log(
-          //      'weight of lightest path from the database= ${getWeight[t].totalWeight!}');
-          // devtools.log(
-          //     'updated weight count from the database= $updateWeightCount');
-        }
       }
 
-      if (getMapInfo.isEmpty) {
+      if (getPointsInfo.isEmpty) {
         //add route if it does not exist in database
-        RouteMapModel newRoute = RouteMapModel(
-          location1: startLocation,
-          location2: destination,
-          weightClass: 1,
-          totalWeight: weightOfLightestPath,
-          isKnown: 1,
-          journeyName: journeyNameToGetWeight,
-          mapName: 'nothing',
-          maps: 'none yet',
-        );
-        var addedRoutes = _localDBhelper.addRouteMapsInFirebase(newRoute);
+        for (int i = 0; i < lightestPath.length; ++i) {
+          RoutePointsModel routePointModel = RoutePointsModel(
+              location1: widget.startLocation,
+              location2: widget.destination,
+              points: lightestPath[i],
+              position: i + 1,
+              journeyName: journeyNameToGetWeight);
+          _localDBhelper.addRoutePointsInFirebase(routePointModel);
+        }
 
         devtools.log('Here It Is');
         // devtools.log('added route count from the database= $addedRoutes');
@@ -326,7 +321,7 @@ class _NewMapsViewState extends State<NewMapsView> {
     setState(() {
       isLoading = false;
     });
-    // await getScreenshot('Hello2', 'mapID');
+    await getScreenshot();
   }
 
   Future<List<Offset>> getCoordinates() async {
@@ -351,10 +346,36 @@ class _NewMapsViewState extends State<NewMapsView> {
     return coordinates;
   }
 
-  getScreenshot(String mapName, String mapID) async {
+  getScreenshot() async {
     try {
-      final url = await uploadScreenshot(mapName);
-      print(url);
+      var journeyName = 'From ${widget.startLocation} to ${widget.destination}';
+      List<RouteMapModel> maps =
+          await _localDBhelper.getRouteMapsForOneJourney(journeyName);
+      if (maps.isEmpty) {
+        final url = await uploadScreenshot(journeyName);
+        devtools.log('GET SCREENSHOT');
+        print(url);
+        RouteMapModel newRoute = RouteMapModel(
+          location1: widget.startLocation,
+          location2: widget.destination,
+          weightClass: 1,
+          totalWeight: totalWeight,
+          isKnown: 1,
+          journeyName: journeyName,
+          mapURL: url,
+        );
+        _localDBhelper.addRouteMapsInFirebase(newRoute);
+      } else if (maps.isNotEmpty && isUpdatedMap == true) {
+        final url = await uploadScreenshot(journeyName);
+        devtools.log('GET SCREENSHOT');
+        print(url);
+        routeMaps[0].totalWeight = totalWeight;
+        routeMaps[0].mapURL = url;
+        _localDBhelper.updateRouteMap(routeMaps[0]);
+      } else {
+        databaseMap = maps[0].mapURL!;
+        setState(() {});
+      }
       //CHANGING IT ON FIREBASE
       // _localDBhelper.updateRouteMap(RouteMapModel(isKnown: isKnown, journeyName: journeyName, location1: location1, location2: location2, mapName: mapName, maps: maps, totalWeight: totalWeight, weightClass: weightClass))
     } catch (e) {
@@ -381,38 +402,54 @@ class _NewMapsViewState extends State<NewMapsView> {
   Widget build(BuildContext context) {
     return Scaffold(
         body: isLoading
-            ? Center(
+            ? const Center(
                 child: CircularProgressIndicator(),
               )
-            : Screenshot(
-                controller: _screenshotController,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Stack(
-                    children: <Widget>[
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 1,
-                        child: Image.asset(
-                          'images/map.png',
-                          fit: BoxFit.cover,
-                        ),
+            : databaseMap != ''
+                ? SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 1,
+                      child: Image.network(
+                        databaseMap,
+                        fit: BoxFit.cover,
                       ),
-                      IgnorePointer(
-                        ignoring: true,
-                        child: SizedBox(
-                          height: MediaQuery.of(context).size.height * 1,
-                          width: MediaQuery.of(context).size.width * 1,
-                          child: CustomPaint(
-                            willChange: true,
-                            painter: NewMapsCircles(coordinates: coordinates),
-                            child: const SizedBox(),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Screenshot(
+                      controller: _screenshotController,
+                      child: Stack(
+                        children: <Widget>[
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 1,
+                            child: Image.asset(
+                              'images/map.png',
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                        ),
+                          isUpdatedMap == true
+                              ? IgnorePointer(
+                                  ignoring: true,
+                                  child: SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height * 1,
+                                    width:
+                                        MediaQuery.of(context).size.width * 1,
+                                    child: CustomPaint(
+                                      willChange: true,
+                                      painter: NewMapsCircles(
+                                          coordinates: coordinates),
+                                      child: const SizedBox(),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox(),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              ));
+                    ),
+                  ));
   }
 }
 
