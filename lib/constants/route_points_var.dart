@@ -4,4 +4,5 @@ class RoutePointsVar {
   static String points = 'points';
   static String position = 'position';
   static String journeyName = 'journey_name';
+  static String weightClass='weight_class';
 }

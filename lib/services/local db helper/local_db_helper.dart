@@ -36,7 +36,7 @@ class LocalDBhelper {
         'CREATE TABLE route_map(${RouteMapsVar.isKnown} INTEGER, ${RouteMapsVar.journeyName} TEXT, ${RouteMapsVar.location1} TEXT, ${RouteMapsVar.location2} TEXT, ${RouteMapsVar.mapURL} TEXT, ${RouteMapsVar.totalWeight} INTEGER, ${RouteMapsVar.weightClass} INTEGER)');
     //ROUTE POINTS
     await db.execute(
-        'CREATE TABLE route_points(${RoutePointsVar.journeyName} TEXT, ${RoutePointsVar.location1} TEXT, ${RoutePointsVar.location2} TEXT, ${RoutePointsVar.points} TEXT, ${RoutePointsVar.position} INTEGER)');
+        'CREATE TABLE route_points(${RoutePointsVar.journeyName} TEXT, ${RoutePointsVar.location1} TEXT, ${RoutePointsVar.location2} TEXT, ${RoutePointsVar.points} TEXT, ${RoutePointsVar.position} INTEGER, ${RoutePointsVar.weightClass} INTEGER)');
     //WEIGHTS
     await db.execute(
         'CREATE TABLE weights(${WeightVar.node1} TEXT, ${WeightVar.node2} TEXT, ${WeightVar.weight} INTEGER, ${WeightVar.weightClass} INTEGER)');
@@ -273,6 +273,7 @@ class LocalDBhelper {
         RoutePointsVar.location1: data.location1,
         RoutePointsVar.location2: data.location2,
         RoutePointsVar.points: data.points,
+        RoutePointsVar.weightClass: data.weightClass,
         RoutePointsVar.position: data.position,
         RoutePointsVar.journeyName: data.journeyName,
       }).then(
@@ -301,11 +302,11 @@ class LocalDBhelper {
   }
 
   // DELETE NODE
-  Future<void> deleteNode(int id) async {
+  Future<void> deleteNode(String name) async {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
-    final deletedCount =
-        await db.delete('nodes', where: 'id = ?', whereArgs: [id]);
+    final deletedCount = await db
+        .delete('nodes', where: '${NodesVar.name} = ?', whereArgs: [name]);
 
     // if (deletedCount != 1) {
     //   throw CouldNotDeleteNode();
@@ -313,7 +314,7 @@ class LocalDBhelper {
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
         .collection('nodes')
-        .where('id', isEqualTo: id)
+        .where(NodesVar.name, isEqualTo: name)
         .get();
     await FirebaseFirestore.instance
         .collection('nodes')
@@ -322,11 +323,12 @@ class LocalDBhelper {
   }
 
   // DELETE ROUTE MAP
-  Future<void> deleteRouteMap(int id) async {
+  Future<void> deleteRouteMap(String journeyName, int weightClass) async {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
-    final deletedCount =
-        await db.delete('route_map', where: 'id = ?', whereArgs: [id]);
+    final deletedCount = await db.delete('route_map',
+        where: 'journey_name = ? and weight_class = ?',
+        whereArgs: [journeyName, weightClass]);
 
     // if (deletedCount != 1) {
     //   throw CouldNotDeleteMapImage();
@@ -334,7 +336,8 @@ class LocalDBhelper {
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
         .collection('route_map')
-        .where('id', isEqualTo: id)
+        .where('journey_name', isEqualTo: journeyName)
+        .where('weight_class', isEqualTo: weightClass)
         .get();
     await FirebaseFirestore.instance
         .collection('route_map')
@@ -347,8 +350,8 @@ class LocalDBhelper {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
     final deletedCount = await db.delete('route_points',
-        where: 'journey_name = ? and position = ?',
-        whereArgs: [data.journeyName, data.position]);
+        where: 'journey_name = ? and position = ? and weight_class = ?',
+        whereArgs: [data.journeyName, data.position, data.weightClass]);
 
     // if (deletedCount != 1) {
     //   throw CouldNotDeletePointsInBetween();
@@ -359,6 +362,7 @@ class LocalDBhelper {
         .collection('route_points')
         .where('journey_name', isEqualTo: data.journeyName)
         .where('position', isEqualTo: data.position)
+        .where('weight_class', isEqualTo: data.weightClass)
         .get();
     await FirebaseFirestore.instance
         .collection('route_points')
@@ -369,11 +373,14 @@ class LocalDBhelper {
   }
 
   // DELETE ROUTE POINTS
-  Future<void> deleteWeights(int id) async {
+  Future<void> deleteWeights(String node1, int weightClass) async {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
-    final deletedCount =
-        await db.delete('weights', where: 'weight_id = ?', whereArgs: [id]);
+    final deletedCount = await db.delete(
+      'weights',
+      where: 'node_1 = ? and weight_class = ?',
+      whereArgs: [node1, weightClass],
+    );
 
     // if (deletedCount != 1) {
     //   throw CouldNotDeleteNodesWeight();
@@ -381,7 +388,8 @@ class LocalDBhelper {
     //DELETING FROM FIREBASE
     final firebaseData = await FirebaseFirestore.instance
         .collection('weights')
-        .where('weight_id', isEqualTo: id)
+        .where('node_1', isEqualTo: node1)
+        .where('weight_class', isEqualTo: weightClass)
         .get();
     await FirebaseFirestore.instance
         .collection('weights')
@@ -441,14 +449,15 @@ class LocalDBhelper {
       var updateCount = await db.update(
         'route_map',
         data.toMap(),
-        where: 'journey_name = ?',
-        whereArgs: [data.journeyName],
+        where: 'journey_name = ? and weight_class = ?',
+        whereArgs: [data.journeyName, data.weightClass],
       );
 
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('route_map')
           .where('journey_name', isEqualTo: data.journeyName)
+          .where('weight_class', isEqualTo: data.weightClass)
           .get();
       await FirebaseFirestore.instance
           .collection('route_map')
@@ -468,8 +477,8 @@ class LocalDBhelper {
       final updateCount = await db.update(
         'route_points',
         data.toMap(),
-        where: 'journey_name = ? and position = ?',
-        whereArgs: [data.journeyName, data.position],
+        where: 'journey_name = ? and position = ? and weight_class = ?',
+        whereArgs: [data.journeyName, data.position, data.weightClass],
       );
 
       //UPDATING FROM FIREBASE
@@ -483,6 +492,7 @@ class LocalDBhelper {
             'position',
             isEqualTo: data.position,
           )
+          .where('weight_class', isEqualTo: data.weightClass)
           .get();
       await FirebaseFirestore.instance
           .collection('route_points')
@@ -502,14 +512,15 @@ class LocalDBhelper {
       final updateCount = await db.update(
         'weights',
         data.toMap(),
-        where: 'node_1 = ?',
-        whereArgs: [data.node1],
+        where: 'node_1 = ? and weight_class = ?',
+        whereArgs: [data.node1, data.weightClass],
       );
 
       //UPDATING FROM FIREBASE
       final firebaseData = await FirebaseFirestore.instance
           .collection('weights')
           .where('node_1', isEqualTo: data.node1)
+          .where('weight_class', isEqualTo: data.weightClass)
           .get();
       await FirebaseFirestore.instance
           .collection('weights')
@@ -523,19 +534,20 @@ class LocalDBhelper {
   }
 
   //GET NODES WEIGHTS FOR ONE NODE
-  Future<List<WeightsModel>> getNodesWeightsForOneNode(String nodeName) async {
+  Future<List<WeightsModel>> getNodesWeightsForOneNode(
+      String nodeName, int weightClass) async {
     final database = await initDatabase();
     List<WeightsModel> weightsList = [];
     var weightsData = await database.query(
       'weights',
-      where: 'node_1 = ?',
-      whereArgs: [nodeName],
+      where: 'node_1 = ? and weight_class = ?',
+      whereArgs: [nodeName, weightClass],
     );
 
     if (weightsData.isNotEmpty) {
       weightsList = weightsData.map((e) => WeightsModel.fromMap(e)).toList();
     } else {
-      throw CouldNotFindSpecificNodesWeight(nodeName);
+      // throw CouldNotFindSpecificNodesWeight(nodeName);
     }
     return weightsList;
   }
@@ -560,48 +572,41 @@ class LocalDBhelper {
 
   //GET ROUTE MAPS FOR ONE JOURNEY
   Future<List<RouteMapModel>> getRouteMapsForOneJourney(
-      String journeyName) async {
+      String journeyName, int weightClass) async {
     final database = await initDatabase();
     List<RouteMapModel> routeMapsList = [];
     var routeMapsData = await database.query(
       'route_map',
-      where: 'journey_name = ?',
-      whereArgs: [journeyName],
+      where: 'journey_name = ? and weight_class = ?',
+      whereArgs: [journeyName, weightClass],
     );
 
     if (routeMapsData.isNotEmpty) {
       routeMapsList =
           routeMapsData.map((e) => RouteMapModel.fromMap(e)).toList();
     } else {
-      throw CouldNotFindSpecificMapImage();
+      // throw CouldNotFindSpecificMapImage();
     }
     return routeMapsList;
   }
 
   //GET ROUTE POINTS FOR ONE JOURNEY
   Future<List<RoutePointsModel>> getRoutePointsForOneJourney(
-      String journeyName) async {
+      String journeyName, int weightClass) async {
     final database = await initDatabase();
     List<RoutePointsModel> routePointsList = [];
     var routePointsData = await database.query(
       'route_points',
-      where: 'journey_name = ?',
-      whereArgs: [journeyName],
+      where: 'journey_name = ? and weight_class = ?',
+      whereArgs: [journeyName, weightClass],
       orderBy: 'position',
     );
 
     if (routePointsData.isNotEmpty) {
       routePointsList =
           routePointsData.map((e) => RoutePointsModel.fromMap(e)).toList();
-      // routePointsList =
-      //     routePointsData.map((e) => RoutePointsModel.fromMap(e)).toList();
-      // for (int i = 0; i < routePointsData.length; i++) {
-      //   if (routePointsData[i]['position'] == position) {
-      //     routePointsList.add(RoutePointsModel.fromMap(routePointsData[i]));
-      //   }
-      // }
     } else {
-      throw CouldNotFindSpecificPointsInBetween();
+      // throw CouldNotFindSpecificPointsInBetween();
     }
     return routePointsList;
   }

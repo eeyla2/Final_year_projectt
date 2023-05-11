@@ -42,8 +42,8 @@ Future<void> main() async {
           registerRoute: (context) => const RegisterView(),
           mapsRoute: (context) => const MainView(),
           verifyEmailRoute: (context) => const VerifyEmailView(),
-          newMapsRoute: (context) => const NewMapsView(startLocation: '',destination: '',),
-          doubleSearchBarRoute: (context) => const DoubleSearchBarView(),
+          newMapsRoute: (context) => const NewMapsView(startLocation: '',destination: '',weightClass: 1,),
+          doubleSearchBarRoute: (context) => const DoubleSearchBarView(weightClass: 1,),
         }),
   );
 }

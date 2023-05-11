@@ -6,8 +6,8 @@ import 'package:legsfree/services/local%20db%20helper/local_db_helper.dart';
 import 'package:legsfree/views/maps/new_maps_view.dart';
 
 class DoubleSearchBarView extends StatefulWidget {
-  const DoubleSearchBarView({super.key});
-
+  const DoubleSearchBarView({super.key, required this.weightClass});
+  final int weightClass;
   @override
   State<DoubleSearchBarView> createState() => _DoubleSearchBarViewState();
 }
@@ -50,36 +50,92 @@ class _DoubleSearchBarViewState extends State<DoubleSearchBarView> {
 
   @override
   Widget build(BuildContext context) {
+    print('WEIGHT CLASS ${widget.weightClass}');
     final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: size.height * 0.18,
         //BACK BUTTON
-        leading: BackButton(),
+        leading: const BackButton(),
         //SEARCH FIELDS
         actions: [
-          Column(
+          Row(
             children: [
-              _searchField(
-                  size,
-                  startLocation,
-                  selectedStartLocation == ''
-                      ? 'Search Start Location'
-                      : selectedStartLocation,
-                  selectedStartLocation == '' ? true : false,
-                  selectedStartLocation == '' ? Colors.grey : Colors.black),
-              _searchField(
-                  size,
-                  destination,
-                  selectedDestination == ''
-                      ? 'Search Destination'
-                      : selectedDestination,
-                  selectedStartLocation == ''
-                      ? false
-                      : selectedDestination == ''
-                          ? true
-                          : false,
-                  selectedDestination == '' ? Colors.grey : Colors.black)
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    height: size.height * 0.027,
+                    width: size.width * 0.06,
+                    decoration: BoxDecoration(
+                        border: Border.all(
+                            color: Colors.white.withOpacity(0.5), width: 3),
+                        shape: BoxShape.circle),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: CircleAvatar(
+                        radius: size.width * 0.03,
+                        backgroundColor: Colors.white.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: size.height * 0.01),
+                  SizedBox(
+                    height: size.height * 0.05,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ...List.generate(
+                            6,
+                            (index) => CircleAvatar(
+                                  radius: 2,
+                                  backgroundColor:
+                                      Colors.white.withOpacity(0.5),
+                                ))
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: size.height * 0.005),
+                  Icon(Icons.location_on_outlined,
+                      size: 30, color: Colors.white.withOpacity(0.5))
+                ],
+              ),
+              SizedBox(width: size.width * 0.03),
+              Column(
+                children: [
+                  _searchField(
+                      size,
+                      startLocation,
+                      selectedStartLocation == ''
+                          ? 'Search Start Location'
+                          : selectedStartLocation,
+                      selectedStartLocation == '' ? true : false,
+                      selectedStartLocation == '' ? Colors.grey : Colors.black,
+                      () {
+                    selectedStartLocation = '';
+                    startLocation.clear();
+                    setState(() {});
+                  }),
+                  _searchField(
+                      size,
+                      destination,
+                      selectedDestination == ''
+                          ? 'Search Destination'
+                          : selectedDestination,
+                      selectedStartLocation == ''
+                          ? false
+                          : selectedDestination == ''
+                              ? true
+                              : false,
+                      selectedDestination == '' ? Colors.grey : Colors.black,
+                      () {
+                    selectedDestination = '';
+                    destination.clear();
+                    setState(() {});
+                  }),
+                ],
+              ),
+              SizedBox(width: size.width * 0.03),
             ],
           )
         ],
@@ -115,18 +171,23 @@ class _DoubleSearchBarViewState extends State<DoubleSearchBarView> {
                           .where((item) => item.name!
                               .toLowerCase()
                               .contains(destination.text.toLowerCase()))
-                          .map((item) => ListTile(
-                                title: Text(item.name!),
-                                subtitle: const Text('University Park Campus'),
-                                onTap: () {
-                                  setState(() {
-                                    destination.clear();
-                                    selectedDestination = item.name!;
-                                    _onSubmit();
-                                  });
-                                },
-                              ))
-                          .toList(),
+                          .map((item) {
+                        if (selectedStartLocation != item.name) {
+                          return ListTile(
+                            title: Text(item.name!),
+                            subtitle: const Text('University Park Campus'),
+                            onTap: () {
+                              setState(() {
+                                destination.clear();
+                                selectedDestination = item.name!;
+                                _onSubmit();
+                              });
+                            },
+                          );
+                        } else {
+                          return const SizedBox();
+                        }
+                      }).toList(),
                     )
                   :
                   //SEARCH PLACEHOLDER
@@ -149,26 +210,34 @@ class _DoubleSearchBarViewState extends State<DoubleSearchBarView> {
   }
 
   Container _searchField(Size size, TextEditingController controller,
-      String hintText, bool enable, Color hintColor) {
+      String hintText, bool enable, Color hintColor, VoidCallback onClear) {
     return Container(
       height: size.height * 0.06,
-      width: size.width * 0.8,
-      margin:
-          EdgeInsets.only(right: size.width * 0.05, top: size.height * 0.02),
+      width: size.width * 0.75,
+      margin: EdgeInsets.only(top: size.height * 0.02),
       padding: EdgeInsets.symmetric(horizontal: size.width * 0.03),
       decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(6)),
-      child: TextField(
-        enabled: enable,
-        controller: controller,
-        onSubmitted: (val) {},
-        onChanged: (val) {
-          setState(() {});
-        },
-        decoration: InputDecoration(
-            hintStyle: TextStyle(color: hintColor),
-            border: InputBorder.none,
-            hintText: hintText),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              enabled: enable,
+              controller: controller,
+              onSubmitted: (val) {},
+              onChanged: (val) {
+                setState(() {});
+              },
+              decoration: InputDecoration(
+                  hintStyle: TextStyle(color: hintColor),
+                  border: InputBorder.none,
+                  hintText: hintText),
+            ),
+          ),
+          InkWell(
+              onTap: onClear,
+              child: const Icon(Icons.close, color: Colors.black))
+        ],
       ),
     );
   }
@@ -199,12 +268,16 @@ class _DoubleSearchBarViewState extends State<DoubleSearchBarView> {
     //     }
     //   }
     // }
+    print('AAA $selectedDestination');
     Navigator.push(
         context,
         MaterialPageRoute(
             builder: (_) => NewMapsView(
                 destination: selectedDestination,
-                startLocation: selectedStartLocation)));
+                startLocation: selectedStartLocation,
+                weightClass: widget.weightClass)));
+
+   
     print('GET NODES POINTS ${getNodePoints.length}');
     isLoading = false;
     setState(() {});

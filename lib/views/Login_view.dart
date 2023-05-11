@@ -44,12 +44,11 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[300],
-      body: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: SafeArea(
-          //height: screenHeight - keyboardHeight,
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.grey[300],
+        body: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -145,15 +144,15 @@ class _LoginViewState extends State<LoginView> {
                           .text; //assigns the value of the password as the text entered to it
                       final password = _password
                           .text; //assigns the value of the email as the text entered to it
-
+    
                       try {
                         //try to sign in the user
-
+    
                         await AuthService.firebase().logIn(
                           email: email,
                           password: password,
                         );
-
+    
                         final user = AuthService.firebase().currentUser;
                         if (user?.isEmailVerified ?? false) {
                           //user email verified

@@ -6,4 +6,5 @@ class RouteMapsVar {
   static String mapURL = 'map_url';
   static String totalWeight = 'total_weight';
   static String weightClass = 'weight_class';
+  
 }

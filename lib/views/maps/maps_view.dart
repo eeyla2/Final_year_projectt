@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 //import 'package:flutter/services.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
 import 'package:legsfree/services/crud/main_services.dart';
+import 'package:legsfree/views/maps/double_search_bar_view.dart';
 //import 'package:legsfree/views/maps/double_search_bar._view.dart';
 //import 'dart:developer' as devtools show log;
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
@@ -127,9 +128,31 @@ class _MainViewState extends State<MainView> {
     super.dispose();
   }
 
+  int selectedButton = 0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          ...List.generate(
+              3,
+              (index) => Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      heroTag: index,
+                      backgroundColor:
+                          selectedButton != index ? Colors.grey : Colors.blue,
+                      onPressed: () {
+                        setState(() {
+                          selectedButton = index;
+                        });
+                      },
+                      child: Text("${index + 1}"),
+                    ),
+                  ))
+        ],
+      ),
       resizeToAvoidBottomInset:
           false, //helps change the gadegst to fit in case other widgets appear
       backgroundColor: Colors.white,
@@ -267,13 +290,15 @@ class _MainViewState extends State<MainView> {
       onQueryChanged: (query) {},
 
       onFocusChanged: (isFocused) {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            doubleSearchBarRoute,
-            (_) => false,
-          );
-          //FocusManager.instance.primaryFocus?.unfocus();
-        });
+        SchedulerBinding.instance.addPostFrameCallback(
+          (_) {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) =>
+                        DoubleSearchBarView(weightClass: selectedButton+1)));
+          },
+        );
       },
 
       // Specify a custom transition to be used for
