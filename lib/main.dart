@@ -5,17 +5,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 //import 'package:legsfree/error_handling/error_handler.dart';
 import 'package:legsfree/services/auth/auth_service.dart';
-import 'package:legsfree/views/maps/double_search_bar._view(old).dart';
+//import 'package:legsfree/views/maps/double_search_bar._view(old).dart';
 import 'package:legsfree/views/maps/maps_view.dart';
 import 'package:legsfree/views/maps/new_maps_view.dart';
-import 'package:location/location.dart';
+//import 'package:location/location.dart';
 //import 'package:flutter/foundation.dart';
 //import 'package:legsfree/firebase_options.dart';
 import 'package:legsfree/views/login_view.dart';
 import 'package:legsfree/views/register_view.dart';
 import 'package:legsfree/views/verify_email_view.dart';
 import 'constants/routes.dart';
-import 'dart:developer' as devtools show log;
+//import 'dart:developer' as devtools show log;
 
 import 'views/maps/double_search_bar_view.dart';
 
@@ -42,8 +42,14 @@ Future<void> main() async {
           registerRoute: (context) => const RegisterView(),
           mapsRoute: (context) => const MainView(),
           verifyEmailRoute: (context) => const VerifyEmailView(),
-          newMapsRoute: (context) => const NewMapsView(startLocation: '',destination: '',weightClass: 1,),
-          doubleSearchBarRoute: (context) => const DoubleSearchBarView(weightClass: 1,),
+          newMapsRoute: (context) => const NewMapsView(
+                startLocation: '',
+                destination: '',
+                weightClass: 1,
+              ),
+          doubleSearchBarRoute: (context) => const DoubleSearchBarView(
+                weightClass: 1,
+              ),
         }),
   );
 }
@@ -146,41 +152,41 @@ Future<bool> showLogOutDialog(BuildContext context) {
       (value) => value ?? false); //incase you want to cancel the whole process
 }
 
-//finding location
-Future initLocationServices() async {
-//create location instance
-  var location = Location();
+// //finding location
+// Future initLocationServices() async {
+// //create location instance
+//   var location = Location();
 
-//check if location services are enabled
-  if (!await location.serviceEnabled()) {
-    if (!await location.requestService()) {
-      return devtools.log('Service Not Enabled');
-    }
-  }
+// //check if location services are enabled
+//   if (!await location.serviceEnabled()) {
+//     if (!await location.requestService()) {
+//       return devtools.log('Service Not Enabled');
+//     }
+//   }
 
-//check that the permission for usage is given
-  var permission = await location.hasPermission();
-  if (permission == PermissionStatus.denied) {
-    permission = await location.requestPermission();
-    if (permission != PermissionStatus.granted) {
-      return devtools.log('Permission not granted');
-    }
-  }
+// //check that the permission for usage is given
+//   var permission = await location.hasPermission();
+//   if (permission == PermissionStatus.denied) {
+//     permission = await location.requestPermission();
+//     if (permission != PermissionStatus.granted) {
+//       return devtools.log('Permission not granted');
+//     }
+//   }
 
-  location.enableBackgroundMode(enable: true);
+//   location.enableBackgroundMode(enable: true);
 
-//might not need
+// //might not need
 
-//output current lcoation to debug console
-  var loc = await location.getLocation();
-  devtools.log('${loc.latitude} ${loc.longitude}');
+// //output current lcoation to debug console
+//   var loc = await location.getLocation();
+//   devtools.log('${loc.latitude} ${loc.longitude}');
 
-//get changing location
-  location.onLocationChanged.listen(
-    (LocationData currentLocation) {
-      // Use current location
-      //_locationData = currentLocation;
-      devtools.log('${currentLocation.latitude} ${currentLocation.longitude}');
-    },
-  );
-}
+// //get changing location
+//   location.onLocationChanged.listen(
+//     (LocationData currentLocation) {
+//       // Use current location
+//       //_locationData = currentLocation;
+//       devtools.log('${currentLocation.latitude} ${currentLocation.longitude}');
+//     },
+//   );
+// }

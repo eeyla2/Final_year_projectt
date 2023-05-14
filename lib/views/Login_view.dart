@@ -52,12 +52,15 @@ class _LoginViewState extends State<LoginView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.android,
-                size: 100,
+              const SizedBox(
+                height: 20,
+              ),
+              Image.asset(
+                "assets/icon/icon.png",
+                height: 150,
               ),
               const SizedBox(
-                height: 55,
+                height: 35,
               ),
               Text(
                 'LegsFree',
@@ -144,15 +147,15 @@ class _LoginViewState extends State<LoginView> {
                           .text; //assigns the value of the password as the text entered to it
                       final password = _password
                           .text; //assigns the value of the email as the text entered to it
-    
+
                       try {
                         //try to sign in the user
-    
+
                         await AuthService.firebase().logIn(
                           email: email,
                           password: password,
                         );
-    
+
                         final user = AuthService.firebase().currentUser;
                         if (user?.isEmailVerified ?? false) {
                           //user email verified

@@ -52,160 +52,163 @@ class _DoubleSearchBarViewState extends State<DoubleSearchBarView> {
   Widget build(BuildContext context) {
     print('WEIGHT CLASS ${widget.weightClass}');
     final size = MediaQuery.of(context).size;
-    return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: size.height * 0.18,
-        //BACK BUTTON
-        leading: const BackButton(),
-        //SEARCH FIELDS
-        actions: [
-          Row(
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    height: size.height * 0.027,
-                    width: size.width * 0.06,
-                    decoration: BoxDecoration(
-                        border: Border.all(
-                            color: Colors.white.withOpacity(0.5), width: 3),
-                        shape: BoxShape.circle),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: CircleAvatar(
-                        radius: size.width * 0.03,
-                        backgroundColor: Colors.white.withOpacity(0.5),
+    return SafeArea(
+      child: Scaffold(
+        appBar: AppBar(
+          toolbarHeight: size.height * 0.18,
+          //BACK BUTTON
+          leading: const BackButton(),
+          //SEARCH FIELDS
+          actions: [
+            Row(
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: size.height * 0.027,
+                      width: size.width * 0.06,
+                      decoration: BoxDecoration(
+                          border: Border.all(
+                              color: Colors.white.withOpacity(0.5), width: 3),
+                          shape: BoxShape.circle),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: CircleAvatar(
+                          radius: size.width * 0.03,
+                          backgroundColor: Colors.white.withOpacity(0.5),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: size.height * 0.01),
-                  SizedBox(
-                    height: size.height * 0.05,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ...List.generate(
-                            6,
-                            (index) => CircleAvatar(
-                                  radius: 2,
-                                  backgroundColor:
-                                      Colors.white.withOpacity(0.5),
-                                ))
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: size.height * 0.005),
-                  Icon(Icons.location_on_outlined,
-                      size: 30, color: Colors.white.withOpacity(0.5))
-                ],
-              ),
-              SizedBox(width: size.width * 0.03),
-              Column(
-                children: [
-                  _searchField(
-                      size,
-                      startLocation,
-                      selectedStartLocation == ''
-                          ? 'Search Start Location'
-                          : selectedStartLocation,
-                      selectedStartLocation == '' ? true : false,
-                      selectedStartLocation == '' ? Colors.grey : Colors.black,
-                      () {
-                    selectedStartLocation = '';
-                    startLocation.clear();
-                    setState(() {});
-                  }),
-                  _searchField(
-                      size,
-                      destination,
-                      selectedDestination == ''
-                          ? 'Search Destination'
-                          : selectedDestination,
-                      selectedStartLocation == ''
-                          ? false
-                          : selectedDestination == ''
-                              ? true
-                              : false,
-                      selectedDestination == '' ? Colors.grey : Colors.black,
-                      () {
-                    selectedDestination = '';
-                    destination.clear();
-                    setState(() {});
-                  }),
-                ],
-              ),
-              SizedBox(width: size.width * 0.03),
-            ],
-          )
-        ],
-      ),
-      //SEARCH DATA
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          :
-          //SEARCH START LOCATION
-          startLocation.text.isNotEmpty
-              ? ListView(
-                  children: isSelectableNodes
-                      .where((item) => item.name!
-                          .toLowerCase()
-                          .contains(startLocation.text.toLowerCase()))
-                      .map((item) => ListTile(
-                            title: Text(item.name!),
-                            subtitle: const Text('University Park Campus'),
-                            onTap: () {
-                              setState(() {
-                                startLocation.clear();
-                                selectedStartLocation = item.name!;
-                              });
-                            },
-                          ))
-                      .toList(),
-                )
-              :
-              //SEARCH DESTINATION
-              destination.text.isNotEmpty
-                  ? ListView(
-                      children: isSelectableNodes
-                          .where((item) => item.name!
-                              .toLowerCase()
-                              .contains(destination.text.toLowerCase()))
-                          .map((item) {
-                        if (selectedStartLocation != item.name) {
-                          return ListTile(
-                            title: Text(item.name!),
-                            subtitle: const Text('University Park Campus'),
-                            onTap: () {
-                              setState(() {
-                                destination.clear();
-                                selectedDestination = item.name!;
-                                _onSubmit();
-                              });
-                            },
-                          );
-                        } else {
-                          return const SizedBox();
-                        }
-                      }).toList(),
-                    )
-                  :
-                  //SEARCH PLACEHOLDER
-                  Center(
+                    SizedBox(height: size.height * 0.01),
+                    SizedBox(
+                      height: size.height * 0.05,
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(
-                            Icons.search,
-                            size: 30,
-                          ),
-                          Text(
-                            'Start Searching',
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
+                          ...List.generate(
+                              6,
+                              (index) => CircleAvatar(
+                                    radius: 2,
+                                    backgroundColor:
+                                        Colors.white.withOpacity(0.5),
+                                  ))
                         ],
                       ),
                     ),
+                    SizedBox(height: size.height * 0.005),
+                    Icon(Icons.location_on_outlined,
+                        size: 30, color: Colors.white.withOpacity(0.5))
+                  ],
+                ),
+                SizedBox(width: size.width * 0.03),
+                Column(
+                  children: [
+                    _searchField(
+                        size,
+                        startLocation,
+                        selectedStartLocation == ''
+                            ? 'Search Start Location'
+                            : selectedStartLocation,
+                        selectedStartLocation == '' ? true : false,
+                        selectedStartLocation == ''
+                            ? Colors.grey
+                            : Colors.black, () {
+                      selectedStartLocation = '';
+                      startLocation.clear();
+                      setState(() {});
+                    }),
+                    _searchField(
+                        size,
+                        destination,
+                        selectedDestination == ''
+                            ? 'Search Destination'
+                            : selectedDestination,
+                        selectedStartLocation == ''
+                            ? false
+                            : selectedDestination == ''
+                                ? true
+                                : false,
+                        selectedDestination == '' ? Colors.grey : Colors.black,
+                        () {
+                      selectedDestination = '';
+                      destination.clear();
+                      setState(() {});
+                    }),
+                  ],
+                ),
+                SizedBox(width: size.width * 0.03),
+              ],
+            )
+          ],
+        ),
+        //SEARCH DATA
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            :
+            //SEARCH START LOCATION
+            startLocation.text.isNotEmpty
+                ? ListView(
+                    children: isSelectableNodes
+                        .where((item) => item.name!
+                            .toLowerCase()
+                            .contains(startLocation.text.toLowerCase()))
+                        .map((item) => ListTile(
+                              title: Text(item.name!),
+                              subtitle: const Text('University Park Campus'),
+                              onTap: () {
+                                setState(() {
+                                  startLocation.clear();
+                                  selectedStartLocation = item.name!;
+                                });
+                              },
+                            ))
+                        .toList(),
+                  )
+                :
+                //SEARCH DESTINATION
+                destination.text.isNotEmpty
+                    ? ListView(
+                        children: isSelectableNodes
+                            .where((item) => item.name!
+                                .toLowerCase()
+                                .contains(destination.text.toLowerCase()))
+                            .map((item) {
+                          if (selectedStartLocation != item.name) {
+                            return ListTile(
+                              title: Text(item.name!),
+                              subtitle: const Text('University Park Campus'),
+                              onTap: () {
+                                setState(() {
+                                  destination.clear();
+                                  selectedDestination = item.name!;
+                                  _onSubmit();
+                                });
+                              },
+                            );
+                          } else {
+                            return const SizedBox();
+                          }
+                        }).toList(),
+                      )
+                    :
+                    //SEARCH PLACEHOLDER
+                    Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.search,
+                              size: 30,
+                            ),
+                            Text(
+                              'Start Searching',
+                              style: Theme.of(context).textTheme.headlineMedium,
+                            ),
+                          ],
+                        ),
+                      ),
+      ),
     );
   }
 
@@ -277,7 +280,6 @@ class _DoubleSearchBarViewState extends State<DoubleSearchBarView> {
                 startLocation: selectedStartLocation,
                 weightClass: widget.weightClass)));
 
-   
     print('GET NODES POINTS ${getNodePoints.length}');
     isLoading = false;
     setState(() {});

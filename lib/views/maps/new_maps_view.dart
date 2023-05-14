@@ -147,12 +147,12 @@ class _NewMapsViewState extends State<NewMapsView> {
 
   storeLightestPathAndPointsInBetween(
       String startLocation, String destination) async {
-   print('CHECK NEW MAPS $startLocation $destination');
+    print('CHECK NEW MAPS $startLocation $destination');
     //take into consideration condition where thedestination and start point are both the same
     if ((startLocation != destination)) {
       //get weight and lightest path
       var lightestPath = graph.lightestPath(startLocation, destination);
-      
+
       var weightOfLightestPath = graph.weightAlong(lightestPath);
       totalWeight = weightOfLightestPath;
       devtools.log('TOTAL WEIGHT $weightOfLightestPath');
@@ -190,8 +190,8 @@ class _NewMapsViewState extends State<NewMapsView> {
           // devtools.log(
           //     'points of lightest path from the database= ${updatedPoints.points}');
           //updating
-          var updateWeightCount =
-              await _localDBhelper.updateRoutePoints(updatedPoints);
+
+          await _localDBhelper.updateRoutePoints(updatedPoints);
 
           counter++;
         }
@@ -244,7 +244,7 @@ class _NewMapsViewState extends State<NewMapsView> {
                     journeyName: journeyNameToGetWeight);
             //devtools.log('here after addition');
             //implement the new point into the local database
-            var addedRoutePoint = _localDBhelper
+            _localDBhelper
                 .addRoutePointsInFirebase(updateRouteWithNewPointsInBetween);
 
             //LocalDBhelper.addRoutePointsInFirebase(
@@ -268,8 +268,8 @@ class _NewMapsViewState extends State<NewMapsView> {
               t < (getPointsInfo.length - lightestPath.length);
               ++t) {
             //delet the rest of the points.
-            var deletedRoutePoint = await _localDBhelper.deleteRoutePoints(
-                getPointsInfo[counterOutsideLoop]);
+            var deletedRoutePoint = await _localDBhelper
+                .deleteRoutePoints(getPointsInfo[counterOutsideLoop]);
 
             deletedCounter += deletedRoutePoint;
             devtools.log(' count of deleted route points = $deletedCounter');
@@ -282,7 +282,6 @@ class _NewMapsViewState extends State<NewMapsView> {
         isUpdatedOrAddedMap = true;
         //add route if it does not exist in database
         for (int i = 0; i < lightestPath.length; ++i) {
-          
           RoutePointsModel routePointModel = RoutePointsModel(
               location1: widget.startLocation,
               weightClass: widget.weightClass,
@@ -329,16 +328,22 @@ class _NewMapsViewState extends State<NewMapsView> {
       isLoading = false;
     });
     await getScreenshot();
-    devtools.log('HELLO PRINT ${isUpdatedOrAddedMap}');
+    devtools.log('HELLO PRINT $isUpdatedOrAddedMap');
   }
 
+//get the coordinates to draw the page
   Future<List<Offset>> getCoordinates() async {
+    //variables declared
     List<NodesModel> nodes = [];
     List<Offset> coordinates = [];
     var journeyName = 'From ${widget.startLocation} to ${widget.destination}';
+
+    //get route points for certain journey
     List<RoutePointsModel> routePoints = await _localDBhelper
         .getRoutePointsForOneJourney(journeyName, widget.weightClass);
     print('SCREENSHOT ROUTE POINTS ${routePoints.length}');
+
+    //for loop that gets the nodes matching the route points for that root
     for (int i = 0; i < routePoints.length; i++) {
       await _localDBhelper
           .getNodesForOneNode(routePoints[i].points!)
@@ -347,7 +352,8 @@ class _NewMapsViewState extends State<NewMapsView> {
       });
     }
     print('SCREENSHOT NODES ${nodes.length}');
-    //SAVING X AND Y COORDINATES IN A THAT FUNCTION
+
+    //getting X and Y coordinates of those nodes
     for (int a = 0; a < nodes.length; a++) {
       coordinates.add(Offset(nodes[a].x!.toDouble(), nodes[a].y!.toDouble()));
     }
@@ -355,15 +361,23 @@ class _NewMapsViewState extends State<NewMapsView> {
     return coordinates;
   }
 
+//takes screenshot of the image
   getScreenshot() async {
     try {
+      //get maps for one route
       var journeyName = 'From ${widget.startLocation} to ${widget.destination}';
       List<RouteMapModel> maps = await _localDBhelper.getRouteMapsForOneJourney(
           journeyName, widget.weightClass);
+
+      //if there is no map for that journey
       if (maps.isEmpty) {
-        final url = await uploadScreenshot('$journeyName ${widget.weightClass}');
+        //url is stored
+        final url =
+            await uploadScreenshot('$journeyName ${widget.weightClass}');
         devtools.log('GET SCREENSHOT');
         print(url);
+
+        //upload a new map with that screenshot
         RouteMapModel newRoute = RouteMapModel(
           location1: widget.startLocation,
           location2: widget.destination,
@@ -375,15 +389,24 @@ class _NewMapsViewState extends State<NewMapsView> {
         );
         _localDBhelper.addRouteMapsInFirebase(newRoute);
       } else if (maps.isNotEmpty && isUpdatedOrAddedMap == true) {
+        //if there is a map for that journey and routepoints were updated
+
+        //new screenshot taken and url created
         final url = await uploadScreenshot(journeyName);
         devtools.log('GET SCREENSHOT');
         print(url);
+
+        //change in values for the weight and url f the journey
         routeMaps[0].totalWeight = totalWeight;
         routeMaps[0].mapURL = url;
+
+        //updated the route in firebase
         _localDBhelper.updateRouteMap(routeMaps[0]);
-      } 
-      if(isUpdatedOrAddedMap==false){
-         databaseMap = maps[0].mapURL!;
+      }
+      if (isUpdatedOrAddedMap == false) {
+        //if the map is not updated or added
+        //show image using the url
+        databaseMap = maps[0].mapURL!;
         setState(() {});
       }
     } catch (e) {
@@ -391,12 +414,24 @@ class _NewMapsViewState extends State<NewMapsView> {
     }
   }
 
+//function to upload a screenshot
   Future<String?> uploadScreenshot(String mapName) async {
+    //takes screenshot
     final image = await _screenshotController.capture();
+
+    //gives file name the mapName which is the journey name and weight class
     final fileName = mapName;
+
+    //returns location of the file
     final ref = FirebaseStorage.instance.ref().child('screenshots/$fileName');
+
+//upload the image process
     final uploadTask = ref.putData(image!);
+
+    //once the screenshot is uploaded upload it to firebase storage
     final snapshot = await uploadTask.whenComplete(() {});
+
+    // a url to the photo is returned.
     return await snapshot.ref.getDownloadURL();
   }
 
@@ -410,19 +445,30 @@ class _NewMapsViewState extends State<NewMapsView> {
   Widget build(BuildContext context) {
     print(coordinates);
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
-       
-      ),
+        // appBar: AppBar(
+        //   backgroundColor: Colors.white,
+        //   foregroundColor: Colors.black,
+        //   elevation: 0,
+        //   centerTitle: true,
+
+        // ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.miniStartTop,
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: FloatingActionButton(
+            onPressed: () => Navigator.pop(context),
+            backgroundColor: Colors.white,
+            child: const Icon(
+              Icons.arrow_back,
+              color: Colors.black,
+            ),
+          ),
+        ),
         body: isLoading
             ? const Center(
                 child: CircularProgressIndicator(),
               )
-            :
-             databaseMap != ''
+            : databaseMap != ''
                 ? SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: SizedBox(
@@ -433,39 +479,40 @@ class _NewMapsViewState extends State<NewMapsView> {
                       ),
                     ),
                   )
-                :
-            SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Screenshot(
-                  controller: _screenshotController,
-                  child: Stack(
-                    children: <Widget>[
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 1,
-                        child: Image.asset(
-                          'images/map.png',
-                          fit: BoxFit.cover,
-                        ),
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Screenshot(
+                      controller: _screenshotController,
+                      child: Stack(
+                        children: <Widget>[
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 1,
+                            child: Image.asset(
+                              'images/map.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          isUpdatedOrAddedMap == true
+                              ? IgnorePointer(
+                                  ignoring: true,
+                                  child: SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height * 1,
+                                    width:
+                                        MediaQuery.of(context).size.width * 1,
+                                    child: CustomPaint(
+                                      willChange: true,
+                                      painter: NewMapsCircles(
+                                          coordinates: coordinates),
+                                      child: const SizedBox(),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox(),
+                        ],
                       ),
-                      isUpdatedOrAddedMap == true
-                          ? IgnorePointer(
-                              ignoring: true,
-                              child: SizedBox(
-                                height: MediaQuery.of(context).size.height * 1,
-                                width: MediaQuery.of(context).size.width * 1,
-                                child: CustomPaint(
-                                  willChange: true,
-                                  painter:
-                                      NewMapsCircles(coordinates: coordinates),
-                                  child: const SizedBox(),
-                                ),
-                              ),
-                            )
-                          : const SizedBox(),
-                    ],
-                  ),
-                ),
-              ));
+                    ),
+                  ));
   }
 }
 

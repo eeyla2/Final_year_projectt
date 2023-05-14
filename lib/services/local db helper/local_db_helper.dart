@@ -305,8 +305,7 @@ class LocalDBhelper {
   Future<void> deleteNode(String name) async {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
-    final deletedCount = await db
-        .delete('nodes', where: '${NodesVar.name} = ?', whereArgs: [name]);
+    await db.delete('nodes', where: '${NodesVar.name} = ?', whereArgs: [name]);
 
     // if (deletedCount != 1) {
     //   throw CouldNotDeleteNode();
@@ -326,7 +325,7 @@ class LocalDBhelper {
   Future<void> deleteRouteMap(String journeyName, int weightClass) async {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
-    final deletedCount = await db.delete('route_map',
+    await db.delete('route_map',
         where: 'journey_name = ? and weight_class = ?',
         whereArgs: [journeyName, weightClass]);
 
@@ -376,7 +375,7 @@ class LocalDBhelper {
   Future<void> deleteWeights(String node1, int weightClass) async {
     //DELETING FROM LOCAL DB
     final db = await initDatabase();
-    final deletedCount = await db.delete(
+    await db.delete(
       'weights',
       where: 'node_1 = ? and weight_class = ?',
       whereArgs: [node1, weightClass],

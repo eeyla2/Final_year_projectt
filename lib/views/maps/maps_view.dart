@@ -110,7 +110,7 @@ class _MainViewState extends State<MainView> {
     getAllNodes();
     //initialize location services
     searchSuggestions = selectableDestinations;
-    initLocationServices();
+    //initLocationServices();
     filteredSearchSuggestions = filteredSearchTerm(filter: null);
     searchController = FloatingSearchBarController();
 
@@ -129,6 +129,11 @@ class _MainViewState extends State<MainView> {
   }
 
   int selectedButton = 0;
+  List<String> buttonIcons = [
+    'images/shortest_path.png',
+    'images/scenic.png',
+    'images/no_elevation.png'
+  ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,14 +146,20 @@ class _MainViewState extends State<MainView> {
                     padding: const EdgeInsets.all(8.0),
                     child: FloatingActionButton(
                       heroTag: index,
-                      backgroundColor:
-                          selectedButton != index ? Colors.grey : Colors.blue,
+                      backgroundColor: selectedButton != index
+                          ? Colors.grey
+                          : Colors.blue.shade800,
                       onPressed: () {
                         setState(() {
                           selectedButton = index;
                         });
                       },
-                      child: Text("${index + 1}"),
+                      child: Center(
+                          child: Image.asset(
+                        buttonIcons[index],
+                        fit: BoxFit.cover,
+                        height: MediaQuery.of(context).size.height * 0.05,
+                      )),
                     ),
                   ))
         ],
@@ -177,16 +188,6 @@ class _MainViewState extends State<MainView> {
                                 //loads an image on to the app
                                 'images/map.png',
                                 fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                          IgnorePointer(
-                            ignoring: true,
-                            child: SizedBox(
-                              height: MediaQuery.of(context).size.height * 1,
-                              child: CustomPaint(
-                                willChange: true,
-                                painter: LocationCircles(),
                               ),
                             ),
                           ),
@@ -296,7 +297,7 @@ class _MainViewState extends State<MainView> {
                 context,
                 MaterialPageRoute(
                     builder: (_) =>
-                        DoubleSearchBarView(weightClass: selectedButton+1)));
+                        DoubleSearchBarView(weightClass: selectedButton + 1)));
           },
         );
       },
@@ -448,52 +449,4 @@ class SearchResultsListView extends StatelessWidget {
       ),
     );
   }
-}
-
-//draws circles and lines
-class LocationCircles extends CustomPainter {
-  //override the paint function with the data and functions to paint
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const pointMode = ui.PointMode.polygon; // drawing as a polygon
-    const points = [
-      //the points the line will draw in between
-      Offset(506, 174), //PBP
-      Offset(501, 167), //PDHO
-      Offset(490, 156), //PTI
-      Offset(493, 167), //ROCHO
-      Offset(482, 186), //ROCHTwo
-      Offset(473, 196), //ROCHThree
-      Offset(475, 212), //BBS
-      Offset(483, 226), //ZC
-      Offset(482, 236), //GGHO
-      Offset(497, 242), //GGHT
-      Offset(504, 231), //SSP
-      // Offset(491, 240), //W301
-      // Offset(506, 248), //57
-      // Offset(507, 263), //24
-      // Offset(450, 150), //57
-      // Offset(800, 500), //24
-      // Offset(200, 100),
-      //Offset(656, 280), //23
-      //Offset(636, 282), //20
-      //Offset(596, 280), //56
-      //Offset(531, 272), //M
-      //Offset(559, 152), //L
-      //Offset(575, 163), //19
-      //Offset(575, 246), //18
-      //Offset(533, 326), //16
-    ];
-    var paint1 = Paint()
-      ..color = const Color.fromARGB(255, 107, 14, 14)
-      ..style = PaintingStyle.fill
-      ..strokeWidth = 3;
-    //canvas.drawCircle(const Offset(533, 326), 6, paint1); //draw circle
-    //canvas.drawCircle(const Offset(200, 100), 14, paint1); //draw circle
-    canvas.drawPoints(pointMode, points, paint1); // draw line between points
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

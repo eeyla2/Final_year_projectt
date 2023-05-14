@@ -41,17 +41,20 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[300],
-      body: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        child: SafeArea(
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.grey[300],
+        body: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.android,
-                size: 100,
+              const SizedBox(
+                height: 20,
+              ),
+              Image.asset(
+                "assets/icon/icon.png",
+                height: 150,
               ),
               const SizedBox(
                 height: 10,
