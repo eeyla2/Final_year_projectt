@@ -308,23 +308,10 @@ class _MainViewState extends State<MainView> {
       actions: [
         //implementation of a popupmenu
         PopupMenuButton<MenuAction>(
-          color: Colors.deepPurple[300],
-          shape: Border(
-            top: BorderSide(
-              color: Colors.deepPurple[100]!,
-              width: 3,
-            ),
-            bottom: BorderSide(
-              color: Colors.deepPurple[100]!,
-              width: 3,
-            ),
-            right: BorderSide(
-              color: Colors.deepPurple[100]!,
-              width: 3,
-            ),
-            left: BorderSide(
-              color: Colors.deepPurple[100]!,
-              width: 3,
+          color: Colors.grey[400],
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(20.0),
             ),
           ),
           onSelected: (value) async {

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 //import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:directed_graph/directed_graph.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:legsfree/models/nodes_model.dart';
 import 'package:legsfree/models/route_map.dart';
 import 'package:legsfree/models/route_points.dart';
@@ -392,7 +393,8 @@ class _NewMapsViewState extends State<NewMapsView> {
         //if there is a map for that journey and routepoints were updated
 
         //new screenshot taken and url created
-        final url = await uploadScreenshot(journeyName);
+        final url =
+            await uploadScreenshot('$journeyName ${widget.weightClass}');
         devtools.log('GET SCREENSHOT');
         print(url);
 
@@ -466,7 +468,8 @@ class _NewMapsViewState extends State<NewMapsView> {
         ),
         body: isLoading
             ? const Center(
-                child: CircularProgressIndicator(),
+                child: spinkit2,
+                //CircularProgressIndicator(),
               )
             : databaseMap != ''
                 ? SingleChildScrollView(
@@ -538,3 +541,9 @@ class NewMapsCircles extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
+
+//spinkit with spinninglines for second loading page
+const spinkit2 = SpinKitSpinningLines(
+  color: Colors.blue,
+  size: 50.0,
+);
